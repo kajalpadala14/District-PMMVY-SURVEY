@@ -19,6 +19,20 @@
  */
 
 @theme inline {
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Barlow Semi Condensed", "IBM Plex Sans", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --color-gov-navy: var(--gov-navy);
+  --color-gov-blue: var(--gov-blue);
+  --color-gov-blue-soft: var(--gov-blue-soft);
+  --color-gov-green: var(--gov-green);
+  --color-gov-green-soft: var(--gov-green-soft);
+  --color-gov-amber: var(--gov-amber);
+  --color-gov-amber-soft: var(--gov-amber-soft);
+  --color-gov-red: var(--gov-red);
+  --color-gov-red-soft: var(--gov-red-soft);
+  --color-gov-saffron: var(--gov-saffron);
+  --color-surface: var(--surface);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
