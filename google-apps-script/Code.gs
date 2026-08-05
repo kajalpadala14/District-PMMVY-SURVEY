@@ -101,7 +101,11 @@ function getBeneficiaries_() {
       const remark = getCell_(row, headers, ["REMARK", "REMARKS"]);
       const reasons = getReasons_(row, headers);
       const primaryReason = reasons[0] || "Other / Document";
-      const completed = reasons.length > 0 || remark !== "";
+      const savedSurveyStatus = getCell_(row, headers, ["SURVEY STATUS"]);
+      const savedCaseStatus = getCell_(row, headers, ["CASE STATUS"]);
+      const completed = savedSurveyStatus
+        ? savedSurveyStatus.toLowerCase() === "completed"
+        : reasons.length > 0 || remark !== "";
 
       return {
         id: "BEN" + pad_(serial, 5),
@@ -119,7 +123,7 @@ function getBeneficiaries_() {
         rawBlock: block,
         reason: primaryReason,
         reasons: reasons,
-        caseStatus: completed ? "Pending" : "Pending",
+        caseStatus: savedCaseStatus || "Pending",
         surveyStatus: completed ? "Completed" : "Pending",
         officer: getCell_(row, headers, ["SURVEY OFFICER", "OFFICER", "ASSIGNED OFFICER"]) || "Unassigned",
         pendingDays: Number(getCell_(row, headers, ["PENDING DAYS", "PENDING SINCE"])) || 0,
@@ -155,9 +159,27 @@ function updateSurvey_(body) {
     }
   });
 
-  const remarkColumn = findHeader_(headers, ["REMARK", "REMARKS"]);
-  if (remarkColumn >= 0 && body.remark !== undefined) {
+  if (body.remark !== undefined) {
+    const remarkColumn = ensureHeader_(sheet, headers, "REMARK");
     sheet.getRange(targetRowIndex + 1, remarkColumn + 1).setValue(body.remark);
+  }
+
+  if (body.officer !== undefined) {
+    const officerColumn = ensureHeader_(sheet, headers, "SURVEY OFFICER");
+    sheet.getRange(targetRowIndex + 1, officerColumn + 1).setValue(body.officer);
+  }
+
+  if (body.surveyDate !== undefined) {
+    const surveyDateColumn = ensureHeader_(sheet, headers, "SURVEY DATE");
+    sheet.getRange(targetRowIndex + 1, surveyDateColumn + 1).setValue(body.surveyDate);
+  }
+
+  const surveyStatusColumn = ensureHeader_(sheet, headers, "SURVEY STATUS");
+  sheet.getRange(targetRowIndex + 1, surveyStatusColumn + 1).setValue("Completed");
+
+  if (body.caseStatus !== undefined) {
+    const caseStatusColumn = ensureHeader_(sheet, headers, "CASE STATUS");
+    sheet.getRange(targetRowIndex + 1, caseStatusColumn + 1).setValue(body.caseStatus);
   }
 
   return getBeneficiaries_()[targetRowIndex - 1];
@@ -196,6 +218,16 @@ function findHeader_(headers, names) {
   return headers.findIndex(function (header) {
     return normalized.indexOf(header) >= 0;
   });
+}
+
+function ensureHeader_(sheet, headers, name) {
+  let index = findHeader_(headers, [name]);
+  if (index >= 0) return index;
+
+  index = headers.length;
+  sheet.getRange(1, index + 1).setValue(name);
+  headers.push(normalizeHeader_(name));
+  return index;
 }
 
 function normalizeHeader_(value) {

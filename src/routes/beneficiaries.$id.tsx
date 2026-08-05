@@ -39,13 +39,20 @@ export const Route = createFileRoute("/beneficiaries/$id")({
 
 function Detail() {
   const { id } = Route.useLoaderData();
-  const { allRows, isLoading, isSheetConfigured, error } = useFilters();
+  const { allRows, isLoading, isSheetConfigured, error, updateSurvey } = useFilters();
   const row = allRows.find((item) => item.id === id);
   const officers = [...new Set(allRows.map((item) => item.officer).filter((officer) => officer && officer !== "Unassigned"))].sort();
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
+  const [officer, setOfficer] = useState("");
+  const [surveyDate, setSurveyDate] = useState(new Date().toISOString().slice(0, 10));
+  const [remark, setRemark] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    setSelectedReasons(row ? [row.reason] : []);
+    setSelectedReasons(row ? (row.reasons?.length ? row.reasons : []) : []);
+    setOfficer(row?.officer && row.officer !== "Unassigned" ? row.officer : "");
+    setSurveyDate(row?.lastSurvey ?? new Date().toISOString().slice(0, 10));
+    setRemark(row?.remark ?? "");
   }, [row]);
 
   const toggleReason = (reason: string, checked: boolean) => {
@@ -53,6 +60,30 @@ function Detail() {
       if (checked) return current.includes(reason) ? current : [...current, reason];
       return current.filter((item) => item !== reason);
     });
+  };
+
+  const saveSurvey = async (caseStatus?: "Pending" | "Resolved") => {
+    if (!row) return;
+    setIsSaving(true);
+    try {
+      await updateSurvey({
+        id: row.id,
+        reasons: selectedReasons,
+        remark,
+        officer,
+        surveyDate,
+        caseStatus,
+      });
+      toast.success(caseStatus === "Resolved" ? "Case marked resolved" : "Survey saved", {
+        description: `${row.name} · ${row.village}`,
+      });
+    } catch (error) {
+      toast.error("Survey not saved", {
+        description: error instanceof Error ? error.message : "Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!row) {
@@ -134,7 +165,7 @@ function Detail() {
                 className="grid gap-3 sm:grid-cols-2"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  toast.success("Survey saved", { description: `${row.name} · ${row.village}` });
+                  void saveSurvey();
                 }}
               >
                 <fieldset className="sm:col-span-2 rounded-md border border-border p-3">
@@ -142,13 +173,15 @@ function Detail() {
                     Issue verification
                   </legend>
                   <div className="grid gap-2 sm:grid-cols-2">
-                    {["MCP Card verified", "Bank account verified", "Aadhaar verified", "Aadhaar-Bank link done", "Other issue present"].map(
-                      (c) => (
-                        <label key={c} className="flex items-center gap-2 text-xs">
-                          <Checkbox /> {c}
-                        </label>
-                      ),
-                    )}
+                    {PENDING_REASONS.map((reason) => (
+                      <label key={reason} className="flex items-center gap-2 text-xs">
+                        <Checkbox
+                          checked={selectedReasons.includes(reason)}
+                          onCheckedChange={(checked) => toggleReason(reason, Boolean(checked))}
+                        />
+                        {reason}
+                      </label>
+                    ))}
                   </div>
                 </fieldset>
 
@@ -180,9 +213,9 @@ function Detail() {
 
                 <div className="grid gap-1.5">
                   <Label className="text-xs">Survey officer</Label>
-                  <Select defaultValue={row.officer}>
+                  <Select value={officer} onValueChange={setOfficer}>
                     <SelectTrigger className="h-9">
-                      <SelectValue />
+                      <SelectValue placeholder="Select officer" />
                     </SelectTrigger>
                     <SelectContent>
                       {officers.map((o) => (
@@ -196,7 +229,7 @@ function Detail() {
 
                 <div className="grid gap-1.5">
                   <Label className="text-xs">Survey date</Label>
-                  <Input type="date" defaultValue="2026-08-05" className="h-9" />
+                  <Input type="date" value={surveyDate} onChange={(e) => setSurveyDate(e.target.value)} className="h-9" />
                 </div>
 
                 <div className="grid gap-1.5">
@@ -211,20 +244,26 @@ function Detail() {
 
                 <div className="grid gap-1.5 sm:col-span-2">
                   <Label className="text-xs">Remarks</Label>
-                  <Textarea rows={3} placeholder="Field observation, action taken, expected closure date" />
+                  <Textarea
+                    rows={3}
+                    value={remark}
+                    onChange={(e) => setRemark(e.target.value)}
+                    placeholder="Field observation, action taken, expected closure date"
+                  />
                 </div>
 
                 <div className="flex gap-2 sm:col-span-2">
-                  <Button type="submit">
+                  <Button type="submit" disabled={isSaving}>
                     <Save className="size-4" /> Submit survey
                   </Button>
-                  <Button type="button" variant="outline" onClick={() => toast.success("Draft saved")}>
+                  <Button type="button" variant="outline" disabled={isSaving} onClick={() => void saveSurvey()}>
                     Save draft
                   </Button>
                   <Button
                     type="button"
                     variant="secondary"
-                    onClick={() => toast.success("Case marked resolved", { description: row.appId })}
+                    disabled={isSaving}
+                    onClick={() => void saveSurvey("Resolved")}
                   >
                     Mark resolved
                   </Button>

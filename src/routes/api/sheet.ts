@@ -52,6 +52,55 @@ export const Route = createFileRoute("/api/sheet")({
           );
         }
       },
+      POST: async ({ request }) => {
+        try {
+          const incomingUrl = new URL(request.url);
+          const body = await request.json();
+          const apiUrl =
+            incomingUrl.searchParams.get("target") ||
+            body.target ||
+            import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
+
+          if (!apiUrl || apiUrl.includes("PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE")) {
+            return Response.json(
+              { ok: false, error: "VITE_GOOGLE_APPS_SCRIPT_URL is not configured." },
+              { status: 400 },
+            );
+          }
+
+          const response = await fetch(apiUrl, {
+            method: "POST",
+            headers: {
+              accept: "application/json",
+              "content-type": "application/json",
+            },
+            body: JSON.stringify(body),
+          });
+          const text = new TextDecoder("utf-8").decode(await response.arrayBuffer());
+
+          try {
+            const payload = JSON.parse(text);
+            return Response.json(payload, { status: response.ok ? 200 : response.status });
+          } catch {
+            return Response.json(
+              {
+                ok: false,
+                error: "Google Apps Script did not return JSON. Check Web App deployment access.",
+                preview: text.slice(0, 300),
+              },
+              { status: 502 },
+            );
+          }
+        } catch (error) {
+          return Response.json(
+            {
+              ok: false,
+              error: error instanceof Error ? error.message : "Unable to update Google Sheet data.",
+            },
+            { status: 502 },
+          );
+        }
+      },
     },
   },
 });

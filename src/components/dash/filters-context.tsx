@@ -15,6 +15,14 @@ interface Ctx {
   isSheetConfigured: boolean;
   isLoading: boolean;
   error: string | null;
+  updateSurvey: (payload: {
+    id: string;
+    reasons: string[];
+    remark?: string;
+    officer?: string;
+    surveyDate?: string;
+    caseStatus?: string;
+  }) => Promise<Beneficiary>;
 }
 
 const FiltersContext = createContext<Ctx | null>(null);
@@ -67,6 +75,25 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
         return next as Filters;
       });
 
+    const updateSurvey: Ctx["updateSurvey"] = async (payload) => {
+      const apiUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
+      if (!apiUrl) throw new Error("VITE_GOOGLE_APPS_SCRIPT_URL is not configured.");
+
+      const params = new URLSearchParams({ target: apiUrl });
+      const response = await fetch(`/api/sheet?${params.toString()}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ action: "updateSurvey", ...payload }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.ok || !result.data) {
+        throw new Error(result.error || "Unable to save survey.");
+      }
+
+      setSourceRows((current) => current.map((row) => (row.id === result.data.id ? result.data : row)));
+      return result.data;
+    };
+
     return {
       filters,
       setFilter,
@@ -77,6 +104,7 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
       isSheetConfigured: Boolean(import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL),
       isLoading,
       error,
+      updateSurvey,
     };
   }, [filters, sourceRows, isLoading, error]);
 
