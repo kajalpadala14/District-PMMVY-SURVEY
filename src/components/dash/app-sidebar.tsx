@@ -4,7 +4,6 @@ import {
   Layers3,
   Landmark,
   Home,
-  UserCheck,
   Users,
   BellRing,
   FileDown,
@@ -30,7 +29,6 @@ const monitoring = [
 ];
 
 const operations = [
-  { title: "Officer Performance", url: "/officers", icon: UserCheck },
   { title: "Beneficiaries", url: "/beneficiaries", icon: Users },
   { title: "Alerts & Escalation", url: "/alerts", icon: BellRing },
   { title: "Reports & Export", url: "/reports", icon: FileDown },
@@ -49,9 +47,9 @@ export function AppSidebar() {
           </div>
           <div className="min-w-0 group-data-[collapsible=icon]:hidden">
             <p className="truncate font-display text-sm font-semibold uppercase tracking-wide text-sidebar-foreground">
-              Command Centre
+              सर्वेक्षण डैशबोर्ड
             </p>
-            <p className="truncate text-[11px] text-sidebar-foreground/60">Mahtari Vandan Yojana</p>
+            <p className="truncate text-[11px] text-sidebar-foreground/60">मातृ वंदना योजना</p>
           </div>
         </div>
 

@@ -21,7 +21,6 @@ import { Bar, Panel, StatusPill } from "@/components/dash/panel";
 import {
   Gauge,
   HBar,
-  OfficerStack,
   ProgressDonut,
   ReasonPie,
   ResolutionArea,
@@ -35,7 +34,6 @@ import {
   blockStats,
   gpStats,
   kpis,
-  officerStats,
   reasonStats,
   trend,
   villageStats,
@@ -50,12 +48,12 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Single-screen district view of pending beneficiaries, block ranking, survey progress and officer performance for Mahtari Vandan Yojana.",
+          "Single-screen district view of pending beneficiaries, block ranking and survey progress for Mahtari Vandan Yojana.",
       },
       { property: "og:title", content: "Executive Dashboard | MVY District Command Centre" },
       {
         property: "og:description",
-        content: "Collector's real-time view of pending beneficiaries, blocks needing intervention and officer performance.",
+        content: "Collector's real-time view of pending beneficiaries, blocks needing intervention and survey progress.",
       },
     ],
   }),
@@ -68,7 +66,6 @@ function Executive() {
   const bs = blockStats(rows);
   const gs = gpStats(rows);
   const vs = villageStats(rows);
-  const os = officerStats(rows);
   const worst = bs[0];
   const best = [...bs].sort((a, b) => b.score - a.score)[0];
   const al = alerts(rows);
@@ -119,12 +116,6 @@ function Executive() {
               value={vs[0] ? vs[0].village : "--"}
               meta={vs[0] ? `${vs[0].pending} pending · officer ${vs[0].officer}` : ""}
             />
-            <SnapRow
-              tone="red"
-              label="Poorest officer performance"
-              value={os.at(-1)?.officer ?? "--"}
-              meta={os.at(-1) ? `${os.at(-1)!.pct}% completion · last activity ${os.at(-1)!.lastActivity}` : ""}
-            />
           </div>
         </Panel>
 
@@ -147,11 +138,8 @@ function Executive() {
       </div>
 
       <div className="mt-3 grid gap-3 xl:grid-cols-3">
-        <Panel title="Block Performance Ranking" subtitle="Composite performance score">
+        <Panel title="Block Performance Ranking" subtitle="Composite performance score" className="xl:col-span-2">
           <HBar data={[...bs].sort((a, b) => a.score - b.score)} nameKey="block" valueKey="score" tone="var(--gov-blue)" />
-        </Panel>
-        <Panel title="Officer Performance" subtitle="Completed vs pending surveys">
-          <OfficerStack data={os} />
         </Panel>
         <div className="grid gap-3">
           <Panel title="Resolved vs Pending" subtitle="District resolution gauge">

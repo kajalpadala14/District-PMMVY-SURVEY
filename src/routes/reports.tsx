@@ -13,7 +13,7 @@ export const Route = createFileRoute("/reports")({
       { title: "Reports & Export | MVY District Command Centre" },
       {
         name: "description",
-        content: "Download district, block, GP, officer, pending and resolved reports in Excel, CSV or PDF respecting active filters.",
+        content: "Download district, block, GP, pending and resolved reports in Excel, CSV or PDF respecting active filters.",
       },
       { property: "og:title", content: "Reports & Export | MVY District Command Centre" },
       { property: "og:description", content: "Filter-aware report downloads for district review and monitoring." },
@@ -27,7 +27,6 @@ const REPORTS = [
   ["Block Wise Report", "Pending, resolved, survey % and issue split per block"],
   ["Gram Panchayat Report", "GP level pending load with high priority cases"],
   ["Village Report", "Village pending, survey % and assigned officer"],
-  ["Officer Performance Report", "Assigned, completed, pending and activity tracking"],
   ["Pending Beneficiary Report", "All pending cases with reason and ageing"],
   ["Resolved Cases Report", "Closed cases with resolution time"],
   ["Survey Progress Report", "Daily survey and resolution trend"],

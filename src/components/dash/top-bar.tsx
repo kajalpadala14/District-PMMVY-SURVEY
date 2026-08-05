@@ -16,7 +16,7 @@ export function TopBar() {
         <SidebarTrigger className="text-primary-foreground hover:bg-primary-foreground/10" />
         <div className="min-w-0">
           <h1 className="truncate font-display text-base leading-tight font-semibold uppercase sm:text-lg">
-            District Collector Command &amp; Monitoring Dashboard
+            मातृ वंदना योजना सर्वेक्षण एवं मॉनिटरिंग डैशबोर्ड
           </h1>
           <p className="truncate text-[11px] text-primary-foreground/70">
             {SCHEME} · {DISTRICT}, {STATE}
@@ -63,8 +63,8 @@ export function TopBar() {
 
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1 border-b border-border bg-surface px-3 py-2 text-xs sm:px-5">
         <InfoBit label="District" value={DISTRICT} />
-        <InfoBit label="Blocks" value="7" />
-        <InfoBit label="Gram Panchayats" value="30" />
+        <InfoBit label="Blocks" value="4" />
+        <InfoBit label="Gram Panchayats" value="169" />
         <InfoBit label="Survey Officers" value="12" />
         <Badge variant="outline" className="border-gov-green/40 bg-gov-green-soft text-gov-green">
           Live · auto refresh 60s

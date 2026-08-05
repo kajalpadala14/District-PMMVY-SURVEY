@@ -1,9 +1,9 @@
-// Demo dataset for the Mahtari Vandan Yojana District Command Dashboard.
+// Demo dataset for the Matru Vandana Yojana survey and monitoring dashboard.
 // Deterministic (seeded) so numbers stay stable across renders/SSR.
 
-export const DISTRICT = "Balodabazar - Bhatapara";
+export const DISTRICT = "Dantewada";
 export const STATE = "Chhattisgarh";
-export const SCHEME = "Mahtari Vandan Yojana";
+export const SCHEME = "मातृ वंदना योजना";
 export const AS_OF = "05 Aug 2026, 09:30 IST";
 
 export const PENDING_REASONS = [
@@ -37,23 +37,17 @@ export interface Beneficiary {
 }
 
 const BLOCKS = [
-  "Balodabazar",
-  "Bhatapara",
-  "Simga",
-  "Kasdol",
-  "Palari",
-  "Bilaigarh",
-  "Lawan",
+  "Dantewada",
+  "Geedam",
+  "Katekalyan",
+  "Kuakonda",
 ] as const;
 
 const GP_NAMES: Record<string, string[]> = {
-  Balodabazar: ["Sonakhan", "Kharora", "Tundra", "Amera", "Karhibhadar"],
-  Bhatapara: ["Nipania", "Hathband", "Dhanora", "Sarsiwa"],
-  Simga: ["Devri", "Ganiyari", "Chhachhanpairi", "Rohansi"],
-  Kasdol: ["Barbhata", "Sahaspur", "Dewpur", "Torwa", "Chhindoli"],
-  Palari: ["Rohara", "Kodwa", "Suhela", "Bhataphod"],
-  Bilaigarh: ["Bhatgaon", "Tundra Kalan", "Bhikamdih", "Sarangarh"],
-  Lawan: ["Lawan", "Mohbhatha", "Rasni"],
+  Dantewada: ["Bade Bacheli", "Balood", "Bhansi", "Chitalanka", "Gadapal", "Kamaloor", "Kumharras", "Teknar"],
+  Geedam: ["Bade Karli", "Bade Paneda", "Hiranar", "Javanga", "Kasoli", "Pharaspal", "Samalur", "Tumrigunda"],
+  Katekalyan: ["Bade Gudra", "Benglur", "Chikpal", "Gatam", "Katekalyan", "Mokhpal", "Parcheli", "Telam"],
+  Kuakonda: ["Aranpur", "Burgum", "Cholnar", "Hiroli", "Kuwakonda", "Nakulnar", "Palnar", "Sameli"],
 };
 
 const FIRST = ["Sunita", "Phulwanti", "Kamla", "Radhika", "Savitri", "Anita", "Dhaneshwari", "Lakshmi", "Bhagwati", "Sushila", "Rukmani", "Gayatri", "Chandrakala", "Yashoda", "Parvati", "Meena"];
@@ -94,13 +88,10 @@ function build(): Beneficiary[] {
 
   // Block weights so ranking is meaningful
   const weight: Record<string, number> = {
-    Kasdol: 1.9,
-    Bilaigarh: 1.7,
-    Balodabazar: 1.3,
-    Simga: 1.0,
-    Palari: 0.9,
-    Bhatapara: 0.8,
-    Lawan: 0.6,
+    Kuakonda: 1.8,
+    Geedam: 1.4,
+    Dantewada: 1.1,
+    Katekalyan: 0.9,
   };
   const pool: string[] = [];
   BLOCKS.forEach((b) => {
@@ -381,7 +372,7 @@ export const activity = [
   { time: "09:24", type: "Survey", text: "Survey completed — Sunita Sahu (MVY/KAS/20418) by P. Dhruw" },
   { time: "09:11", type: "Resolved", text: "Case resolved — Bank account corrected, Kharora GP" },
   { time: "08:58", type: "Upload", text: "MCP card uploaded — Phulwanti Verma, Devri" },
-  { time: "08:40", type: "Officer", text: "3 beneficiaries reassigned to K. Bareth (Bilaigarh)" },
+  { time: "08:40", type: "Officer", text: "3 beneficiaries reassigned to K. Bareth (Kuakonda)" },
   { time: "08:22", type: "Survey", text: "Survey updated — Aadhaar-Bank link initiated, Suhela" },
   { time: "08:05", type: "Resolved", text: "Case resolved — Aadhaar mismatch rectified, Hathband" },
 ];

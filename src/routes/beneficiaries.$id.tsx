@@ -58,7 +58,7 @@ function Detail() {
             <Field label="Village" value={row.village} />
             <Field label="Gram Panchayat" value={row.gp} />
             <Field label="Block" value={row.block} />
-            <Field label="District" value="Balodabazar-Bhatapara" />
+            <Field label="District" value="Dantewada" />
             <Field label="Pending Reason" value={row.reason} />
             <Field label="Pending Since" value={`${row.pendingDays} days`} />
             <Field label="Assigned Officer" value={row.officer} />

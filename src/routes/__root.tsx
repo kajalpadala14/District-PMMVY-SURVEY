@@ -82,11 +82,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "District Command Dashboard | Mahtari Vandan Yojana" },
+      { title: "मातृ वंदना योजना सर्वेक्षण एवं मॉनिटरिंग डैशबोर्ड" },
       {
         name: "description",
         content:
-          "Collector command and monitoring dashboard for Mahtari Vandan Yojana pending beneficiaries, block performance and survey progress.",
+          "मातृ वंदना योजना के लंबित हितग्राहियों, ब्लॉक प्रदर्शन और सर्वेक्षण प्रगति के लिए सर्वेक्षण एवं मॉनिटरिंग डैशबोर्ड.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -100,7 +100,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Barlow+Semi+Condensed:wght@500;600;700&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
@@ -141,7 +141,7 @@ function RootComponent() {
                 <Outlet />
               </main>
               <footer className="border-t border-border bg-surface px-5 py-3 text-[11px] text-muted-foreground">
-                District Administration, Balodabazar-Bhatapara · Mahtari Vandan Yojana monitoring cell · Demo data
+                District Administration, Dantewada · मातृ वंदना योजना monitoring cell · Demo data
               </footer>
             </div>
           </div>
@@ -151,4 +151,3 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
-

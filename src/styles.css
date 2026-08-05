@@ -19,8 +19,8 @@
  */
 
 @theme inline {
-  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Barlow Semi Condensed", "IBM Plex Sans", sans-serif;
+  --font-sans: "Noto Sans Devanagari", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Noto Sans Devanagari", "Barlow Semi Condensed", "IBM Plex Sans", sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
   --color-gov-navy: var(--gov-navy);
   --color-gov-blue: var(--gov-blue);
@@ -204,4 +204,3 @@
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
-

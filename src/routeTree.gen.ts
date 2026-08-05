@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AlertsRouteImport } from './routes/alerts'
 import { Route as BlocksRouteImport } from './routes/blocks'
 import { Route as GramPanchayatsRouteImport } from './routes/gram-panchayats'
-import { Route as OfficersRouteImport } from './routes/officers'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as VillagesRouteImport } from './routes/villages'
 import { Route as BeneficiariesIndexRouteImport } from './routes/beneficiaries.index'
@@ -37,11 +36,6 @@ const BlocksRoute = BlocksRouteImport.update({
 const GramPanchayatsRoute = GramPanchayatsRouteImport.update({
   id: '/gram-panchayats',
   path: '/gram-panchayats',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OfficersRoute = OfficersRouteImport.update({
-  id: '/officers',
-  path: '/officers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReportsRoute = ReportsRouteImport.update({
@@ -70,7 +64,6 @@ export interface FileRoutesByFullPath {
   '/alerts': typeof AlertsRoute
   '/blocks': typeof BlocksRoute
   '/gram-panchayats': typeof GramPanchayatsRoute
-  '/officers': typeof OfficersRoute
   '/reports': typeof ReportsRoute
   '/villages': typeof VillagesRoute
   '/beneficiaries/$id': typeof BeneficiariesIdRoute
@@ -81,7 +74,6 @@ export interface FileRoutesByTo {
   '/alerts': typeof AlertsRoute
   '/blocks': typeof BlocksRoute
   '/gram-panchayats': typeof GramPanchayatsRoute
-  '/officers': typeof OfficersRoute
   '/reports': typeof ReportsRoute
   '/villages': typeof VillagesRoute
   '/beneficiaries/$id': typeof BeneficiariesIdRoute
@@ -93,7 +85,6 @@ export interface FileRoutesById {
   '/alerts': typeof AlertsRoute
   '/blocks': typeof BlocksRoute
   '/gram-panchayats': typeof GramPanchayatsRoute
-  '/officers': typeof OfficersRoute
   '/reports': typeof ReportsRoute
   '/villages': typeof VillagesRoute
   '/beneficiaries/$id': typeof BeneficiariesIdRoute
@@ -106,7 +97,6 @@ export interface FileRouteTypes {
     | '/alerts'
     | '/blocks'
     | '/gram-panchayats'
-    | '/officers'
     | '/reports'
     | '/villages'
     | '/beneficiaries/$id'
@@ -117,7 +107,6 @@ export interface FileRouteTypes {
     | '/alerts'
     | '/blocks'
     | '/gram-panchayats'
-    | '/officers'
     | '/reports'
     | '/villages'
     | '/beneficiaries/$id'
@@ -128,7 +117,6 @@ export interface FileRouteTypes {
     | '/alerts'
     | '/blocks'
     | '/gram-panchayats'
-    | '/officers'
     | '/reports'
     | '/villages'
     | '/beneficiaries/$id'
@@ -140,7 +128,6 @@ export interface RootRouteChildren {
   AlertsRoute: typeof AlertsRoute
   BlocksRoute: typeof BlocksRoute
   GramPanchayatsRoute: typeof GramPanchayatsRoute
-  OfficersRoute: typeof OfficersRoute
   ReportsRoute: typeof ReportsRoute
   VillagesRoute: typeof VillagesRoute
   BeneficiariesIdRoute: typeof BeneficiariesIdRoute
@@ -175,13 +162,6 @@ declare module '@tanstack/react-router' {
       path: '/gram-panchayats'
       fullPath: '/gram-panchayats'
       preLoaderRoute: typeof GramPanchayatsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/officers': {
-      id: '/officers'
-      path: '/officers'
-      fullPath: '/officers'
-      preLoaderRoute: typeof OfficersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reports': {
@@ -220,7 +200,6 @@ const rootRouteChildren: RootRouteChildren = {
   AlertsRoute: AlertsRoute,
   BlocksRoute: BlocksRoute,
   GramPanchayatsRoute: GramPanchayatsRoute,
-  OfficersRoute: OfficersRoute,
   ReportsRoute: ReportsRoute,
   VillagesRoute: VillagesRoute,
   BeneficiariesIdRoute: BeneficiariesIdRoute,
@@ -229,3 +208,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
