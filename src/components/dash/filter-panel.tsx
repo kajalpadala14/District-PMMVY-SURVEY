@@ -93,7 +93,7 @@ function Picker({
 }) {
   return (
     <Select value={value ?? ALL} onValueChange={(v) => onChange(v === ALL ? "" : v)}>
-      <SelectTrigger size="sm" className="h-8 min-w-[132px] text-xs">
+      <SelectTrigger className="h-8 min-w-[132px] text-xs">
         <SelectValue placeholder={label} />
       </SelectTrigger>
       <SelectContent className="max-h-72">
