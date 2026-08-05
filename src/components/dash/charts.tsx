@@ -39,7 +39,7 @@ export function HBar({
   height = 260,
   tone = "var(--gov-blue)",
 }: {
-  data: Record<string, unknown>[];
+  data: readonly object[];
   nameKey: string;
   valueKey: string;
   height?: number;
@@ -64,7 +64,7 @@ export function VBar({
   valueKey,
   height = 260,
 }: {
-  data: Record<string, unknown>[];
+  data: readonly object[];
   nameKey: string;
   valueKey: string;
   height?: number;
