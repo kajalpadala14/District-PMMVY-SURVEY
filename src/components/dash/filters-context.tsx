@@ -1,7 +1,7 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   applyFilters,
-  beneficiaries,
+  type Beneficiary,
   type Filters,
 } from "@/data/district";
 
@@ -10,13 +10,49 @@ interface Ctx {
   setFilter: (key: keyof Filters, value: string) => void;
   reset: () => void;
   rows: ReturnType<typeof applyFilters>;
+  allRows: Beneficiary[];
   activeCount: number;
+  isSheetConfigured: boolean;
+  isLoading: boolean;
+  error: string | null;
 }
 
 const FiltersContext = createContext<Ctx | null>(null);
 
 export function FiltersProvider({ children }: { children: ReactNode }) {
   const [filters, setFilters] = useState<Filters>({});
+  const [sourceRows, setSourceRows] = useState<Beneficiary[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const apiUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
+    if (!apiUrl) return;
+
+    setIsLoading(true);
+    setError(null);
+    const params = new URLSearchParams({
+      action: "beneficiaries",
+      target: apiUrl,
+    });
+
+    fetch(`/api/sheet?${params.toString()}`)
+      .then((response) => {
+        if (!response.ok) throw new Error(`Sheet API failed: ${response.status}`);
+        return response.json();
+      })
+      .then((payload) => {
+        if (!payload.ok || !Array.isArray(payload.data)) throw new Error(payload.error || "Invalid sheet API response");
+        setSourceRows(payload.data);
+      })
+      .catch((error) => {
+        console.error(error);
+        setError(error instanceof Error ? error.message : "Unable to load sheet data");
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
 
   const value = useMemo<Ctx>(() => {
     const setFilter = (key: keyof Filters, v: string) =>
@@ -35,10 +71,14 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
       filters,
       setFilter,
       reset: () => setFilters({}),
-      rows: applyFilters(beneficiaries, filters),
+      rows: applyFilters(sourceRows, filters),
+      allRows: sourceRows,
       activeCount: Object.values(filters).filter(Boolean).length,
+      isSheetConfigured: Boolean(import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL),
+      isLoading,
+      error,
     };
-  }, [filters]);
+  }, [filters, sourceRows, isLoading, error]);
 
   return <FiltersContext.Provider value={value}>{children}</FiltersContext.Provider>;
 }

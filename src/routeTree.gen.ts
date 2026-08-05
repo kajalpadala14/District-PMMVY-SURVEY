@@ -15,6 +15,7 @@ import { Route as BlocksRouteImport } from './routes/blocks'
 import { Route as GramPanchayatsRouteImport } from './routes/gram-panchayats'
 import { Route as ReportsRouteImport } from './routes/reports'
 import { Route as VillagesRouteImport } from './routes/villages'
+import { Route as ApiSheetRouteImport } from './routes/api/sheet'
 import { Route as BeneficiariesIndexRouteImport } from './routes/beneficiaries.index'
 import { Route as BeneficiariesIdRouteImport } from './routes/beneficiaries.$id'
 
@@ -48,6 +49,11 @@ const VillagesRoute = VillagesRouteImport.update({
   path: '/villages',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSheetRoute = ApiSheetRouteImport.update({
+  id: '/api/sheet',
+  path: '/api/sheet',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BeneficiariesIndexRoute = BeneficiariesIndexRouteImport.update({
   id: '/beneficiaries/',
   path: '/beneficiaries/',
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   '/gram-panchayats': typeof GramPanchayatsRoute
   '/reports': typeof ReportsRoute
   '/villages': typeof VillagesRoute
+  '/api/sheet': typeof ApiSheetRoute
   '/beneficiaries/$id': typeof BeneficiariesIdRoute
   '/beneficiaries/': typeof BeneficiariesIndexRoute
 }
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/gram-panchayats': typeof GramPanchayatsRoute
   '/reports': typeof ReportsRoute
   '/villages': typeof VillagesRoute
+  '/api/sheet': typeof ApiSheetRoute
   '/beneficiaries/$id': typeof BeneficiariesIdRoute
   '/beneficiaries': typeof BeneficiariesIndexRoute
 }
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/gram-panchayats': typeof GramPanchayatsRoute
   '/reports': typeof ReportsRoute
   '/villages': typeof VillagesRoute
+  '/api/sheet': typeof ApiSheetRoute
   '/beneficiaries/$id': typeof BeneficiariesIdRoute
   '/beneficiaries/': typeof BeneficiariesIndexRoute
 }
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/gram-panchayats'
     | '/reports'
     | '/villages'
+    | '/api/sheet'
     | '/beneficiaries/$id'
     | '/beneficiaries/'
   fileRoutesByTo: FileRoutesByTo
@@ -109,6 +119,7 @@ export interface FileRouteTypes {
     | '/gram-panchayats'
     | '/reports'
     | '/villages'
+    | '/api/sheet'
     | '/beneficiaries/$id'
     | '/beneficiaries'
   id:
@@ -119,6 +130,7 @@ export interface FileRouteTypes {
     | '/gram-panchayats'
     | '/reports'
     | '/villages'
+    | '/api/sheet'
     | '/beneficiaries/$id'
     | '/beneficiaries/'
   fileRoutesById: FileRoutesById
@@ -130,6 +142,7 @@ export interface RootRouteChildren {
   GramPanchayatsRoute: typeof GramPanchayatsRoute
   ReportsRoute: typeof ReportsRoute
   VillagesRoute: typeof VillagesRoute
+  ApiSheetRoute: typeof ApiSheetRoute
   BeneficiariesIdRoute: typeof BeneficiariesIdRoute
   BeneficiariesIndexRoute: typeof BeneficiariesIndexRoute
 }
@@ -178,6 +191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VillagesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/sheet': {
+      id: '/api/sheet'
+      path: '/api/sheet'
+      fullPath: '/api/sheet'
+      preLoaderRoute: typeof ApiSheetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/beneficiaries/': {
       id: '/beneficiaries/'
       path: '/beneficiaries'
@@ -202,6 +222,7 @@ const rootRouteChildren: RootRouteChildren = {
   GramPanchayatsRoute: GramPanchayatsRoute,
   ReportsRoute: ReportsRoute,
   VillagesRoute: VillagesRoute,
+  ApiSheetRoute: ApiSheetRoute,
   BeneficiariesIdRoute: BeneficiariesIdRoute,
   BeneficiariesIndexRoute: BeneficiariesIndexRoute,
 }

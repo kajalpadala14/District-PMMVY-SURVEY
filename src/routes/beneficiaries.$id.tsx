@@ -1,34 +1,35 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
-import { ArrowLeft, FileUp, MapPin, Save, Upload } from "lucide-react";
+import { useEffect, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowLeft, ChevronDown, MapPin, Save } from "lucide-react";
 import { toast } from "sonner";
+import { useFilters } from "@/components/dash/filters-context";
 import { Panel, PageTitle } from "@/components/dash/panel";
-import { beneficiaries, OFFICER_NAMES, PENDING_REASONS } from "@/data/district";
+import { PENDING_REASONS } from "@/data/district";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/beneficiaries/$id")({
   loader: ({ params }) => {
-    const row = beneficiaries.find((b) => b.id === params.id);
-    if (!row) throw notFound();
-    return { row };
+    return { id: params.id };
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
       return { meta: [{ title: "Beneficiary not found | MVY" }, { name: "robots", content: "noindex" }] };
     }
-    const title = `${loaderData.row.name} — Beneficiary Profile | MVY`;
+    const title = "Beneficiary Profile | MVY";
     return {
       meta: [
         { title },
-        { name: "description", content: `Survey history, pending reason and documents for ${loaderData.row.name}, ${loaderData.row.village}.` },
+        { name: "description", content: "Sheet-backed beneficiary survey record." },
         { property: "og:title", content: title },
-        { property: "og:description", content: `Pending reason: ${loaderData.row.reason} · Block ${loaderData.row.block}` },
+        { property: "og:description", content: "Sheet-backed beneficiary survey record." },
         { name: "robots", content: "noindex" },
       ],
     };
@@ -37,7 +38,45 @@ export const Route = createFileRoute("/beneficiaries/$id")({
 });
 
 function Detail() {
-  const { row } = Route.useLoaderData();
+  const { id } = Route.useLoaderData();
+  const { allRows, isLoading, isSheetConfigured, error } = useFilters();
+  const row = allRows.find((item) => item.id === id);
+  const officers = [...new Set(allRows.map((item) => item.officer).filter((officer) => officer && officer !== "Unassigned"))].sort();
+  const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
+
+  useEffect(() => {
+    setSelectedReasons(row ? [row.reason] : []);
+  }, [row]);
+
+  const toggleReason = (reason: string, checked: boolean) => {
+    setSelectedReasons((current) => {
+      if (checked) return current.includes(reason) ? current : [...current, reason];
+      return current.filter((item) => item !== reason);
+    });
+  };
+
+  if (!row) {
+    return (
+      <>
+        <Button variant="ghost" size="sm" asChild className="mb-2">
+          <Link to="/beneficiaries">
+            <ArrowLeft className="size-4" /> Back to register
+          </Link>
+        </Button>
+        <Panel
+          title={isLoading ? "Loading beneficiary" : "Beneficiary not available"}
+          subtitle={
+            error ||
+            (isSheetConfigured
+              ? "Sheet data is loading or this record was not found in the connected sheet."
+              : "Add VITE_GOOGLE_APPS_SCRIPT_URL in .env to load data from your Google Sheet.")
+          }
+        >
+          <p className="text-sm text-muted-foreground">No dummy beneficiary data is being shown.</p>
+        </Panel>
+      </>
+    );
+  }
 
   return (
     <>
@@ -90,13 +129,7 @@ function Detail() {
 
         <Panel title="Survey Form" subtitle="Field verification entry" className="xl:col-span-2">
           <Tabs defaultValue="verify">
-            <TabsList>
-              <TabsTrigger value="verify">Verification</TabsTrigger>
-              <TabsTrigger value="docs">Documents</TabsTrigger>
-              <TabsTrigger value="timeline">Timeline</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="verify" className="pt-3">
+            <TabsContent value="verify">
               <form
                 className="grid gap-3 sm:grid-cols-2"
                 onSubmit={(e) => {
@@ -121,18 +154,28 @@ function Detail() {
 
                 <div className="grid gap-1.5">
                   <Label className="text-xs">Pending reason (updated)</Label>
-                  <Select defaultValue={row.reason}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button type="button" variant="outline" className="h-auto min-h-9 justify-between px-3 text-left font-normal">
+                        <span className="line-clamp-2">
+                          {selectedReasons.length > 0 ? selectedReasons.join(", ") : "Select pending reasons"}
+                        </span>
+                        <ChevronDown className="ml-2 size-4 shrink-0 opacity-60" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)]">
                       {PENDING_REASONS.map((r) => (
-                        <SelectItem key={r} value={r}>
+                        <DropdownMenuCheckboxItem
+                          key={r}
+                          checked={selectedReasons.includes(r)}
+                          onCheckedChange={(checked) => toggleReason(r, Boolean(checked))}
+                          onSelect={(e) => e.preventDefault()}
+                        >
                           {r}
-                        </SelectItem>
+                        </DropdownMenuCheckboxItem>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
 
                 <div className="grid gap-1.5">
@@ -142,7 +185,7 @@ function Detail() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {OFFICER_NAMES.map((o) => (
+                      {officers.map((o) => (
                         <SelectItem key={o} value={o}>
                           {o}
                         </SelectItem>
@@ -187,42 +230,6 @@ function Detail() {
                   </Button>
                 </div>
               </form>
-            </TabsContent>
-
-            <TabsContent value="docs" className="pt-3">
-              <div className="grid gap-2 sm:grid-cols-2">
-                {["Aadhaar card", "Bank passbook", "Beneficiary photo", "Supporting document"].map((d) => (
-                  <div key={d} className="flex items-center justify-between rounded-md border border-dashed border-border p-3">
-                    <div>
-                      <p className="text-xs font-semibold">{d}</p>
-                      <p className="text-[11px] text-muted-foreground">PDF / JPG up to 5 MB</p>
-                    </div>
-                    <Button size="sm" variant="outline" onClick={() => toast.success(`${d} uploaded`)}>
-                      <Upload className="size-3.5" /> Upload
-                    </Button>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-3 flex items-center gap-1.5 rounded-md bg-gov-blue-soft p-2 text-[11px] text-gov-navy">
-                <FileUp className="size-3.5" /> Uploaded files are linked to the beneficiary record and available in reports.
-              </p>
-            </TabsContent>
-
-            <TabsContent value="timeline" className="pt-3">
-              <ol className="relative ml-2 border-l border-border pl-4 text-xs">
-                {[
-                  ["05 Aug 2026", `Survey ${row.surveyStatus.toLowerCase()} — officer ${row.officer}`],
-                  ["31 Jul 2026", `Pending reason recorded: ${row.reason}`],
-                  ["22 Jul 2026", "Officer assigned by Block Officer"],
-                  ["14 Jul 2026", "Application flagged pending during payment cycle"],
-                ].map(([date, text], i) => (
-                  <li key={i} className="mb-4">
-                    <span className="absolute -left-1.5 size-3 rounded-full bg-gov-blue" />
-                    <p className="num text-[11px] text-muted-foreground">{date}</p>
-                    <p className="font-medium text-foreground">{text}</p>
-                  </li>
-                ))}
-              </ol>
             </TabsContent>
           </Tabs>
         </Panel>
