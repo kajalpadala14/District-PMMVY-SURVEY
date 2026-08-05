@@ -21,14 +21,16 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
   const value = useMemo<Ctx>(() => {
     const setFilter = (key: keyof Filters, v: string) =>
       setFilters((prev) => {
-        const next: Filters = { ...prev, [key]: v || undefined };
+        const next: Record<string, string | undefined> = { ...prev, [key]: v || undefined };
         if (key === "block") {
-          next.gp = undefined;
-          next.village = undefined;
+          delete next.gp;
+          delete next.village;
         }
-        if (key === "gp") next.village = undefined;
-        return next;
+        if (key === "gp") delete next.village;
+        Object.keys(next).forEach((k) => next[k] === undefined && delete next[k]);
+        return next as Filters;
       });
+
     return {
       filters,
       setFilter,
