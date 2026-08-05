@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BlocksRouteImport } from './routes/blocks'
 import { Route as GramPanchayatsRouteImport } from './routes/gram-panchayats'
+import { Route as OfficersRouteImport } from './routes/officers'
 import { Route as VillagesRouteImport } from './routes/villages'
+import { Route as BeneficiariesIndexRouteImport } from './routes/beneficiaries.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,9 +31,19 @@ const GramPanchayatsRoute = GramPanchayatsRouteImport.update({
   path: '/gram-panchayats',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OfficersRoute = OfficersRouteImport.update({
+  id: '/officers',
+  path: '/officers',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const VillagesRoute = VillagesRouteImport.update({
   id: '/villages',
   path: '/villages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BeneficiariesIndexRoute = BeneficiariesIndexRouteImport.update({
+  id: '/beneficiaries/',
+  path: '/beneficiaries/',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -39,34 +51,61 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/blocks': typeof BlocksRoute
   '/gram-panchayats': typeof GramPanchayatsRoute
+  '/officers': typeof OfficersRoute
   '/villages': typeof VillagesRoute
+  '/beneficiaries/': typeof BeneficiariesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/blocks': typeof BlocksRoute
   '/gram-panchayats': typeof GramPanchayatsRoute
+  '/officers': typeof OfficersRoute
   '/villages': typeof VillagesRoute
+  '/beneficiaries': typeof BeneficiariesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/blocks': typeof BlocksRoute
   '/gram-panchayats': typeof GramPanchayatsRoute
+  '/officers': typeof OfficersRoute
   '/villages': typeof VillagesRoute
+  '/beneficiaries/': typeof BeneficiariesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/blocks' | '/gram-panchayats' | '/villages'
+  fullPaths:
+    | '/'
+    | '/blocks'
+    | '/gram-panchayats'
+    | '/officers'
+    | '/villages'
+    | '/beneficiaries/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/blocks' | '/gram-panchayats' | '/villages'
-  id: '__root__' | '/' | '/blocks' | '/gram-panchayats' | '/villages'
+  to:
+    | '/'
+    | '/blocks'
+    | '/gram-panchayats'
+    | '/officers'
+    | '/villages'
+    | '/beneficiaries'
+  id:
+    | '__root__'
+    | '/'
+    | '/blocks'
+    | '/gram-panchayats'
+    | '/officers'
+    | '/villages'
+    | '/beneficiaries/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   BlocksRoute: typeof BlocksRoute
   GramPanchayatsRoute: typeof GramPanchayatsRoute
+  OfficersRoute: typeof OfficersRoute
   VillagesRoute: typeof VillagesRoute
+  BeneficiariesIndexRoute: typeof BeneficiariesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -92,11 +131,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GramPanchayatsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/officers': {
+      id: '/officers'
+      path: '/officers'
+      fullPath: '/officers'
+      preLoaderRoute: typeof OfficersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/villages': {
       id: '/villages'
       path: '/villages'
       fullPath: '/villages'
       preLoaderRoute: typeof VillagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/beneficiaries/': {
+      id: '/beneficiaries/'
+      path: '/beneficiaries'
+      fullPath: '/beneficiaries/'
+      preLoaderRoute: typeof BeneficiariesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -106,7 +159,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   BlocksRoute: BlocksRoute,
   GramPanchayatsRoute: GramPanchayatsRoute,
+  OfficersRoute: OfficersRoute,
   VillagesRoute: VillagesRoute,
+  BeneficiariesIndexRoute: BeneficiariesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
