@@ -16,7 +16,7 @@ export function TopBar() {
         <SidebarTrigger className="text-primary-foreground hover:bg-primary-foreground/10" />
         <div className="min-w-0">
           <h1 className="truncate font-display text-base leading-tight font-semibold uppercase sm:text-lg">
-            मातृ वंदना योजना सर्वेक्षण एवं मॉनिटरिंग डैशबोर्ड
+            मातृ वंदन योजना सर्वेक्षण एवं मॉनिटरिंग डैशबोर्ड
           </h1>
           <p className="truncate text-[11px] text-primary-foreground/70">
             {SCHEME} · {DISTRICT}, {STATE}

@@ -82,11 +82,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "मातृ वंदना योजना सर्वेक्षण एवं मॉनिटरिंग डैशबोर्ड" },
+      { title: "मातृ वंदन योजना सर्वेक्षण एवं मॉनिटरिंग डैशबोर्ड" },
       {
         name: "description",
         content:
-          "मातृ वंदना योजना के लंबित हितग्राहियों, ब्लॉक प्रदर्शन और सर्वेक्षण प्रगति के लिए सर्वेक्षण एवं मॉनिटरिंग डैशबोर्ड.",
+          "मातृ वंदन योजना के लंबित हितग्राहियों, ब्लॉक प्रदर्शन और सर्वेक्षण प्रगति के लिए सर्वेक्षण एवं मॉनिटरिंग डैशबोर्ड.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -141,7 +141,7 @@ function RootComponent() {
                 <Outlet />
               </main>
               <footer className="border-t border-border bg-surface px-5 py-3 text-[11px] text-muted-foreground">
-                District Administration, Dantewada · मातृ वंदना योजना monitoring cell · Demo data
+                District Administration, Dantewada · मातृ वंदन योजना monitoring cell · Demo data
               </footer>
             </div>
           </div>

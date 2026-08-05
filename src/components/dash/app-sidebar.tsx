@@ -1,7 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
-  Layers3,
   Landmark,
   Home,
   Users,
@@ -23,7 +22,6 @@ import {
 
 const monitoring = [
   { title: "Executive Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Block Monitoring", url: "/blocks", icon: Layers3 },
   { title: "Gram Panchayat", url: "/gram-panchayats", icon: Landmark },
   { title: "Village Monitoring", url: "/villages", icon: Home },
 ];
@@ -49,7 +47,7 @@ export function AppSidebar() {
             <p className="truncate font-display text-sm font-semibold uppercase tracking-wide text-sidebar-foreground">
               सर्वेक्षण डैशबोर्ड
             </p>
-            <p className="truncate text-[11px] text-sidebar-foreground/60">मातृ वंदना योजना</p>
+            <p className="truncate text-[11px] text-sidebar-foreground/60">मातृ वंदन योजना</p>
           </div>
         </div>
 
