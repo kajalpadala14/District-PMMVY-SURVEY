@@ -23,10 +23,10 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
       setFilters((prev) => {
         const next: Record<string, string | undefined> = { ...prev, [key]: v || undefined };
         if (key === "block") {
-          delete next.gp;
-          delete next.village;
+          delete next["gp"];
+          delete next["village"];
         }
-        if (key === "gp") delete next.village;
+        if (key === "gp") delete next["village"];
         Object.keys(next).forEach((k) => next[k] === undefined && delete next[k]);
         return next as Filters;
       });
