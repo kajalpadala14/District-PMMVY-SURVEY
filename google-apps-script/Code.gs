@@ -99,7 +99,8 @@ function getBeneficiaries_() {
       const gender = getCell_(row, headers, ["GENDER"]);
       const guardian = getCell_(row, headers, ["FATHER'S/HUSBAND'S NAME", "FATHERS/HUSBANDS NAME", "GUARDIAN"]);
       const remark = getCell_(row, headers, ["REMARK", "REMARKS"]);
-      const reasons = getReasons_(row, headers);
+      const pendingReasonText = getCell_(row, headers, ["PENDING REASON", "PENDING REASONS"]);
+      const reasons = unique_(getReasons_(row, headers).concat(parseReasons_(pendingReasonText)));
       const primaryReason = reasons[0] || "Other / Document";
       const savedSurveyStatus = getCell_(row, headers, ["SURVEY STATUS"]);
       const savedCaseStatus = getCell_(row, headers, ["CASE STATUS"]);
@@ -151,13 +152,14 @@ function updateSurvey_(body) {
 
   if (targetRowIndex < 1) throw new Error("Beneficiary not found: " + id);
 
-  const selectedReasons = Array.isArray(body.reasons) ? body.reasons : [];
+  const selectedReasons = normalizeReasons_(body.reasons || body.reason || []);
   ISSUE_COLUMNS.forEach(function (issue) {
-    const column = findHeader_(headers, [issue.header]);
-    if (column >= 0) {
-      sheet.getRange(targetRowIndex + 1, column + 1).setValue(selectedReasons.indexOf(issue.reason) >= 0 ? "YES" : "");
-    }
+    const column = ensureHeader_(sheet, headers, issue.header);
+    sheet.getRange(targetRowIndex + 1, column + 1).setValue(selectedReasons.indexOf(issue.reason) >= 0 ? "YES" : "");
   });
+
+  const pendingReasonColumn = ensureHeader_(sheet, headers, "PENDING REASON");
+  sheet.getRange(targetRowIndex + 1, pendingReasonColumn + 1).setValue(selectedReasons.join(", "));
 
   if (body.remark !== undefined) {
     const remarkColumn = ensureHeader_(sheet, headers, "REMARK");
@@ -197,6 +199,40 @@ function getReasons_(row, headers) {
     return isMarked_(value);
   }).map(function (issue) {
     return issue.reason;
+  });
+}
+
+function parseReasons_(value) {
+  return normalizeReasons_(
+    String(value || "")
+      .split(/[,;|]/)
+      .map(function (item) {
+        return item.trim();
+      }),
+  );
+}
+
+function normalizeReasons_(value) {
+  const input = Array.isArray(value) ? value : [value];
+  return unique_(
+    input
+      .map(function (item) {
+        const text = String(item || "").trim().toUpperCase();
+        const match = ISSUE_COLUMNS.find(function (issue) {
+          return issue.reason.toUpperCase() === text || issue.header.toUpperCase() === text;
+        });
+        return match ? match.reason : "";
+      })
+      .filter(Boolean),
+  );
+}
+
+function unique_(values) {
+  const seen = {};
+  return values.filter(function (value) {
+    if (seen[value]) return false;
+    seen[value] = true;
+    return true;
   });
 }
 

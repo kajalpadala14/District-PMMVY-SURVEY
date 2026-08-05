@@ -17,6 +17,7 @@ interface Ctx {
   error: string | null;
   updateSurvey: (payload: {
     id: string;
+    reason?: string;
     reasons: string[];
     remark?: string;
     officer?: string;

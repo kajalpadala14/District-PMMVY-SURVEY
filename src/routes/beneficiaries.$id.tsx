@@ -64,10 +64,18 @@ function Detail() {
 
   const saveSurvey = async (caseStatus?: "Pending" | "Resolved") => {
     if (!row) return;
+    if (selectedReasons.length === 0) {
+      toast.error("Pending reason required", {
+        description: "Select at least one pending reason before saving.",
+      });
+      return;
+    }
+
     setIsSaving(true);
     try {
       await updateSurvey({
         id: row.id,
+        reason: selectedReasons[0],
         reasons: selectedReasons,
         remark,
         officer,
