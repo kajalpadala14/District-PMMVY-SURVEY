@@ -10,33 +10,141 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AlertsRouteImport } from './routes/alerts'
+import { Route as BlocksRouteImport } from './routes/blocks'
+import { Route as GramPanchayatsRouteImport } from './routes/gram-panchayats'
+import { Route as OfficersRouteImport } from './routes/officers'
+import { Route as ReportsRouteImport } from './routes/reports'
+import { Route as VillagesRouteImport } from './routes/villages'
+import { Route as BeneficiariesIndexRouteImport } from './routes/beneficiaries.index'
+import { Route as BeneficiariesIdRouteImport } from './routes/beneficiaries.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AlertsRoute = AlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlocksRoute = BlocksRouteImport.update({
+  id: '/blocks',
+  path: '/blocks',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GramPanchayatsRoute = GramPanchayatsRouteImport.update({
+  id: '/gram-panchayats',
+  path: '/gram-panchayats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OfficersRoute = OfficersRouteImport.update({
+  id: '/officers',
+  path: '/officers',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReportsRoute = ReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VillagesRoute = VillagesRouteImport.update({
+  id: '/villages',
+  path: '/villages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BeneficiariesIndexRoute = BeneficiariesIndexRouteImport.update({
+  id: '/beneficiaries/',
+  path: '/beneficiaries/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BeneficiariesIdRoute = BeneficiariesIdRouteImport.update({
+  id: '/beneficiaries/$id',
+  path: '/beneficiaries/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/alerts': typeof AlertsRoute
+  '/blocks': typeof BlocksRoute
+  '/gram-panchayats': typeof GramPanchayatsRoute
+  '/officers': typeof OfficersRoute
+  '/reports': typeof ReportsRoute
+  '/villages': typeof VillagesRoute
+  '/beneficiaries/$id': typeof BeneficiariesIdRoute
+  '/beneficiaries/': typeof BeneficiariesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/alerts': typeof AlertsRoute
+  '/blocks': typeof BlocksRoute
+  '/gram-panchayats': typeof GramPanchayatsRoute
+  '/officers': typeof OfficersRoute
+  '/reports': typeof ReportsRoute
+  '/villages': typeof VillagesRoute
+  '/beneficiaries/$id': typeof BeneficiariesIdRoute
+  '/beneficiaries': typeof BeneficiariesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/alerts': typeof AlertsRoute
+  '/blocks': typeof BlocksRoute
+  '/gram-panchayats': typeof GramPanchayatsRoute
+  '/officers': typeof OfficersRoute
+  '/reports': typeof ReportsRoute
+  '/villages': typeof VillagesRoute
+  '/beneficiaries/$id': typeof BeneficiariesIdRoute
+  '/beneficiaries/': typeof BeneficiariesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/alerts'
+    | '/blocks'
+    | '/gram-panchayats'
+    | '/officers'
+    | '/reports'
+    | '/villages'
+    | '/beneficiaries/$id'
+    | '/beneficiaries/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/alerts'
+    | '/blocks'
+    | '/gram-panchayats'
+    | '/officers'
+    | '/reports'
+    | '/villages'
+    | '/beneficiaries/$id'
+    | '/beneficiaries'
+  id:
+    | '__root__'
+    | '/'
+    | '/alerts'
+    | '/blocks'
+    | '/gram-panchayats'
+    | '/officers'
+    | '/reports'
+    | '/villages'
+    | '/beneficiaries/$id'
+    | '/beneficiaries/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AlertsRoute: typeof AlertsRoute
+  BlocksRoute: typeof BlocksRoute
+  GramPanchayatsRoute: typeof GramPanchayatsRoute
+  OfficersRoute: typeof OfficersRoute
+  ReportsRoute: typeof ReportsRoute
+  VillagesRoute: typeof VillagesRoute
+  BeneficiariesIdRoute: typeof BeneficiariesIdRoute
+  BeneficiariesIndexRoute: typeof BeneficiariesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,22 +156,76 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/alerts': {
+      id: '/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof AlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blocks': {
+      id: '/blocks'
+      path: '/blocks'
+      fullPath: '/blocks'
+      preLoaderRoute: typeof BlocksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gram-panchayats': {
+      id: '/gram-panchayats'
+      path: '/gram-panchayats'
+      fullPath: '/gram-panchayats'
+      preLoaderRoute: typeof GramPanchayatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/officers': {
+      id: '/officers'
+      path: '/officers'
+      fullPath: '/officers'
+      preLoaderRoute: typeof OfficersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reports': {
+      id: '/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof ReportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/villages': {
+      id: '/villages'
+      path: '/villages'
+      fullPath: '/villages'
+      preLoaderRoute: typeof VillagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/beneficiaries/': {
+      id: '/beneficiaries/'
+      path: '/beneficiaries'
+      fullPath: '/beneficiaries/'
+      preLoaderRoute: typeof BeneficiariesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/beneficiaries/$id': {
+      id: '/beneficiaries/$id'
+      path: '/beneficiaries/$id'
+      fullPath: '/beneficiaries/$id'
+      preLoaderRoute: typeof BeneficiariesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AlertsRoute: AlertsRoute,
+  BlocksRoute: BlocksRoute,
+  GramPanchayatsRoute: GramPanchayatsRoute,
+  OfficersRoute: OfficersRoute,
+  ReportsRoute: ReportsRoute,
+  VillagesRoute: VillagesRoute,
+  BeneficiariesIdRoute: BeneficiariesIdRoute,
+  BeneficiariesIndexRoute: BeneficiariesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
