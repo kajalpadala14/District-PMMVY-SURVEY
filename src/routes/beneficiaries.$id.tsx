@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, ChevronDown, MapPin, Save } from "lucide-react";
 import { toast } from "sonner";
@@ -13,7 +13,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+interface TimelineItem {
+  date: string;
+  time?: string;
+  text: string;
+  detail?: string;
+  officer?: string;
+}
 
 export const Route = createFileRoute("/beneficiaries/$id")({
   loader: ({ params }) => {
@@ -47,6 +55,9 @@ function Detail() {
   const [surveyDate, setSurveyDate] = useState(new Date().toISOString().slice(0, 10));
   const [remark, setRemark] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [timelineItems, setTimelineItems] = useState<TimelineItem[]>([]);
+  const [isTimelineLoading, setIsTimelineLoading] = useState(false);
+  const [timelineError, setTimelineError] = useState<string | null>(null);
 
   useEffect(() => {
     setSelectedReasons(row ? (row.reasons?.length ? row.reasons : []) : []);
@@ -61,6 +72,43 @@ function Detail() {
       return current.filter((item) => item !== reason);
     });
   };
+
+  const loadTimeline = useCallback(
+    async (beneficiaryId: string) => {
+      if (!isSheetConfigured) {
+        setTimelineItems([]);
+        setTimelineError(null);
+        return;
+      }
+
+      setIsTimelineLoading(true);
+      setTimelineError(null);
+      try {
+        const params = new URLSearchParams({ action: "timeline", id: beneficiaryId });
+        const response = await fetch(`/api/sheet?${params.toString()}`);
+        const payload = await response.json();
+        if (!response.ok || !payload.ok || !Array.isArray(payload.data)) {
+          throw new Error(payload.error || "Unable to load timeline.");
+        }
+        setTimelineItems(payload.data);
+      } catch (error) {
+        setTimelineItems([]);
+        setTimelineError(error instanceof Error ? error.message : "Unable to load timeline.");
+      } finally {
+        setIsTimelineLoading(false);
+      }
+    },
+    [isSheetConfigured],
+  );
+
+  useEffect(() => {
+    if (!row) {
+      setTimelineItems([]);
+      setTimelineError(null);
+      return;
+    }
+    void loadTimeline(row.id);
+  }, [row, loadTimeline]);
 
   const saveSurvey = async (caseStatus?: "Pending" | "Resolved") => {
     if (!row) return;
@@ -85,6 +133,7 @@ function Detail() {
       toast.success(caseStatus === "Resolved" ? "Case marked resolved" : "Survey saved", {
         description: `${row.name} · ${row.village}`,
       });
+      await loadTimeline(row.id);
     } catch (error) {
       toast.error("Survey not saved", {
         description: error instanceof Error ? error.message : "Please try again.",
@@ -168,6 +217,11 @@ function Detail() {
 
         <Panel title="Survey Form" subtitle="Field verification entry" className="xl:col-span-2">
           <Tabs defaultValue="verify">
+            <TabsList className="mb-3">
+              <TabsTrigger value="verify">Verification</TabsTrigger>
+              <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            </TabsList>
+
             <TabsContent value="verify">
               <form
                 className="grid gap-3 sm:grid-cols-2"
@@ -278,11 +332,42 @@ function Detail() {
                 </div>
               </form>
             </TabsContent>
+
+            <TabsContent value="timeline">
+              {isTimelineLoading ? (
+                <p className="text-sm text-muted-foreground">Loading timeline...</p>
+              ) : timelineError ? (
+                <p className="text-sm text-gov-red">{timelineError}</p>
+              ) : timelineItems.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No timeline activity recorded yet.</p>
+              ) : (
+                <ol className="relative ml-1 space-y-4 border-l-2 border-gov-blue/30 py-1 pl-5">
+                  {timelineItems.map((item, index) => (
+                    <li key={`${item.time || item.date}-${item.text}-${index}`} className="relative">
+                      <span className="absolute -left-[29px] top-1 size-3 rounded-full bg-gov-blue ring-4 ring-background" />
+                      <time className="num text-[11px] text-muted-foreground">{formatDisplayDate(item.date || item.time || "")}</time>
+                      <p className="mt-0.5 text-sm font-medium leading-snug text-foreground">{item.text}</p>
+                      {item.detail ? <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{item.detail}</p> : null}
+                      {item.officer ? <p className="mt-0.5 text-xs leading-snug text-muted-foreground">Officer: {item.officer}</p> : null}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </TabsContent>
           </Tabs>
         </Panel>
       </div>
     </>
   );
+}
+
+function formatDisplayDate(date: string) {
+  if (!date) return "--";
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(new Date(`${date}T00:00:00`));
 }
 
 function Field({ label, value }: { label: string; value: string }) {

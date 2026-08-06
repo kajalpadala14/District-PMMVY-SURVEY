@@ -1,5 +1,6 @@
 const CONFIG = {
   SHEET_NAME: "SURVEY",
+  TIMELINE_SHEET_NAME: "TIMELINE",
   DEFAULT_DISTRICT: "Dantewada",
   DEFAULT_STATE: "Chhattisgarh",
 };
@@ -34,6 +35,14 @@ function doGet(e) {
         return item.id === id || item.appId === id;
       });
       return jsonResponse({ ok: true, data: row || null });
+    }
+
+    if (action === "timeline") {
+      const id = String((e.parameter && e.parameter.id) || "");
+      return jsonResponse({
+        ok: true,
+        data: getTimeline_(id),
+      });
     }
 
     const beneficiaries = getBeneficiaries_();
@@ -153,6 +162,8 @@ function updateSurvey_(body) {
 
   if (targetRowIndex < 1) throw new Error("Beneficiary not found: " + id);
 
+  const before = getBeneficiaries_()[targetRowIndex - 1];
+
   const selectedReasons = normalizeReasons_(body.reasons || body.reason || []);
   ISSUE_COLUMNS.forEach(function (issue) {
     const column = ensureHeader_(sheet, headers, issue.header);
@@ -185,7 +196,74 @@ function updateSurvey_(body) {
     sheet.getRange(targetRowIndex + 1, caseStatusColumn + 1).setValue(body.caseStatus);
   }
 
-  return getBeneficiaries_()[targetRowIndex - 1];
+  const updated = getBeneficiaries_()[targetRowIndex - 1];
+  appendTimeline_(updated, buildTimelineText_(before, updated, body), body);
+  return updated;
+}
+
+function getTimeline_(id) {
+  if (!id) return [];
+
+  const sheet = getTimelineSheet_(false);
+  if (!sheet) return [];
+
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length < 2) return [];
+
+  const headers = values[0].map(normalizeHeader_);
+  return values
+    .slice(1)
+    .filter(function (row) {
+      const beneficiaryId = getCell_(row, headers, ["BENEFICIARY ID"]);
+      const appId = getCell_(row, headers, ["APPLICATION ID"]);
+      return beneficiaryId === id || appId === id;
+    })
+    .map(function (row) {
+      return {
+        date: getCell_(row, headers, ["DATE"]),
+        time: getCell_(row, headers, ["TIME"]),
+        text: getCell_(row, headers, ["EVENT"]),
+        detail: getCell_(row, headers, ["DETAIL"]),
+        officer: getCell_(row, headers, ["OFFICER"]),
+      };
+    })
+    .sort(function (a, b) {
+      return String(b.time || b.date).localeCompare(String(a.time || a.date));
+    });
+}
+
+function appendTimeline_(beneficiary, text, body) {
+  const sheet = getTimelineSheet_(true);
+  const now = new Date();
+  const date = body.surveyDate || Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd");
+  const time = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
+  sheet.appendRow([
+    time,
+    date,
+    beneficiary.id,
+    beneficiary.appId,
+    beneficiary.name,
+    text,
+    beneficiary.remark || "",
+    beneficiary.officer || "",
+  ]);
+}
+
+function buildTimelineText_(before, updated, body) {
+  if (body.caseStatus === "Resolved") return "Case marked resolved";
+  if (before && before.officer !== updated.officer) return "Survey officer updated";
+  if (before && String(before.reason) !== String(updated.reason)) return "Pending reason updated";
+  return "Survey saved";
+}
+
+function getTimelineSheet_(createIfMissing) {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = spreadsheet.getSheetByName(CONFIG.TIMELINE_SHEET_NAME);
+  if (!sheet && createIfMissing) {
+    sheet = spreadsheet.insertSheet(CONFIG.TIMELINE_SHEET_NAME);
+    sheet.appendRow(["TIME", "DATE", "BENEFICIARY ID", "APPLICATION ID", "BENEFICIARY NAME", "EVENT", "DETAIL", "OFFICER"]);
+  }
+  return sheet;
 }
 
 function getSheet_() {
