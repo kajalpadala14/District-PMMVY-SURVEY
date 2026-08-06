@@ -11,9 +11,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { SidebarProvider } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/sonner";
-import { AppSidebar } from "@/components/dash/app-sidebar";
 import { TopBar } from "@/components/dash/top-bar";
 import { FiltersProvider } from "@/components/dash/filters-context";
 
@@ -82,11 +80,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "मातृ वंदन योजना सर्वेक्षण एवं मॉनिटरिंग डैशबोर्ड" },
+      { title: "Mahtari Vandan Yojana Survey Monitoring Dashboard" },
       {
         name: "description",
         content:
-          "मातृ वंदन योजना के लंबित हितग्राहियों, ब्लॉक प्रदर्शन और सर्वेक्षण प्रगति के लिए सर्वेक्षण एवं मॉनिटरिंग डैशबोर्ड.",
+          "Survey and monitoring dashboard for Mahtari Vandan Yojana pending beneficiaries, block performance and field progress.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -131,21 +129,15 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <FiltersProvider>
-        <SidebarProvider>
-          <div className="flex min-h-screen w-full bg-background">
-            <AppSidebar />
-            <div className="flex min-w-0 flex-1 flex-col">
-              <TopBar />
-              <main className="flex-1 px-3 py-4 sm:px-5">
-                {/* Required: nested routes render here. */}
-                <Outlet />
-              </main>
-              <footer className="border-t border-border bg-surface px-5 py-3 text-[11px] text-muted-foreground">
-                District Administration, Dantewada · मातृ वंदन योजना monitoring cell · Demo data
-              </footer>
-            </div>
-          </div>
-        </SidebarProvider>
+        <div className="flex min-h-screen w-full flex-col bg-background">
+          <TopBar />
+          <main className="mx-auto w-full max-w-[1600px] flex-1 px-3 py-4 sm:px-5">
+            <Outlet />
+          </main>
+          <footer className="border-t border-border bg-surface px-5 py-3 text-[11px] text-muted-foreground">
+            District Administration, Dantewada - Mahtari Vandan Yojana monitoring cell
+          </footer>
+        </div>
         <Toaster position="top-right" richColors />
       </FiltersProvider>
     </QueryClientProvider>

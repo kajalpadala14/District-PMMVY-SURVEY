@@ -6,7 +6,11 @@ export const Route = createFileRoute("/api/sheet")({
       GET: async ({ request }) => {
         try {
           const incomingUrl = new URL(request.url);
-          const apiUrl = incomingUrl.searchParams.get("target") || import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
+          const apiUrl = (
+            incomingUrl.searchParams.get("target") ||
+            import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL ||
+            ""
+          ).replace(/\s/g, "");
 
           if (!apiUrl || apiUrl.includes("PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE")) {
             return Response.json(
@@ -24,9 +28,9 @@ export const Route = createFileRoute("/api/sheet")({
             upstreamUrl.searchParams.set("action", "beneficiaries");
           }
 
-          const response = await fetch(upstreamUrl.toString(), {
+          const response = await fetchWithTimeout(upstreamUrl.toString(), {
             headers: { accept: "application/json" },
-          });
+          }, 55000);
           const text = new TextDecoder("utf-8").decode(await response.arrayBuffer());
 
           try {
@@ -43,12 +47,17 @@ export const Route = createFileRoute("/api/sheet")({
             );
           }
         } catch (error) {
+          const timedOut = error instanceof Error && error.name === "AbortError";
           return Response.json(
             {
               ok: false,
-              error: error instanceof Error ? error.message : "Unable to fetch Google Sheet data.",
+              error: timedOut
+                ? "Google Sheet request timed out. Apps Script is taking too long to respond."
+                : error instanceof Error
+                  ? error.message
+                  : "Unable to fetch Google Sheet data.",
             },
-            { status: 502 },
+            { status: timedOut ? 504 : 502 },
           );
         }
       },
@@ -56,10 +65,12 @@ export const Route = createFileRoute("/api/sheet")({
         try {
           const incomingUrl = new URL(request.url);
           const body = await request.json();
-          const apiUrl =
+          const apiUrl = (
             incomingUrl.searchParams.get("target") ||
             body.target ||
-            import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
+            import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL ||
+            ""
+          ).replace(/\s/g, "");
 
           if (!apiUrl || apiUrl.includes("PASTE_YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE")) {
             return Response.json(
@@ -68,14 +79,14 @@ export const Route = createFileRoute("/api/sheet")({
             );
           }
 
-          const response = await fetch(apiUrl, {
+          const response = await fetchWithTimeout(apiUrl, {
             method: "POST",
             headers: {
               accept: "application/json",
               "content-type": "application/json",
             },
             body: JSON.stringify(body),
-          });
+          }, 55000);
           const text = new TextDecoder("utf-8").decode(await response.arrayBuffer());
 
           try {
@@ -92,15 +103,26 @@ export const Route = createFileRoute("/api/sheet")({
             );
           }
         } catch (error) {
+          const timedOut = error instanceof Error && error.name === "AbortError";
           return Response.json(
             {
               ok: false,
-              error: error instanceof Error ? error.message : "Unable to update Google Sheet data.",
+              error: timedOut
+                ? "Google Sheet update timed out. Apps Script is taking too long to respond."
+                : error instanceof Error
+                  ? error.message
+                  : "Unable to update Google Sheet data.",
             },
-            { status: 502 },
+            { status: timedOut ? 504 : 502 },
           );
         }
       },
     },
   },
 });
+
+function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(timeout));
+}

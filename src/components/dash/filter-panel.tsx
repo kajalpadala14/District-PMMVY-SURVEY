@@ -26,8 +26,6 @@ export function FilterPanel() {
         .map((b) => b.village),
     ),
   ].sort();
-  const officers = unique(allRows.map((b) => b.officer).filter((officer) => officer && officer !== "Unassigned"));
-
   return (
     <div className="gov-panel mb-4 p-3.5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -51,7 +49,7 @@ export function FilterPanel() {
         </div>
       </div>
 
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8">
+      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <SearchBox value={filters.q ?? ""} onChange={(v) => setFilter("q", v)} />
         <Picker label="Block" value={filters.block} options={blocks} onChange={(v) => setFilter("block", v)} />
         <Picker label="Gram Panchayat" value={filters.gp} options={gps} onChange={(v) => setFilter("gp", v)} />
@@ -67,18 +65,6 @@ export function FilterPanel() {
           value={filters.survey}
           options={["Completed", "Pending"]}
           onChange={(v) => setFilter("survey", v)}
-        />
-        <Picker
-          label="Case Status"
-          value={filters.status}
-          options={["Pending", "Resolved"]}
-          onChange={(v) => setFilter("status", v)}
-        />
-        <Picker
-          label="Survey Officer"
-          value={filters.officer}
-          options={officers}
-          onChange={(v) => setFilter("officer", v)}
         />
       </div>
     </div>

@@ -50,7 +50,6 @@ function Beneficiaries() {
                 <th className="px-2 py-2">Survey</th>
                 <th className="px-2 py-2">Status</th>
                 <th className="px-2 py-2">Pending Days</th>
-                <th className="px-2 py-2">Officer</th>
                 <th className="px-2 py-2" />
               </tr>
             </thead>
@@ -88,7 +87,6 @@ function Beneficiaries() {
                     </Badge>
                   </td>
                   <td className={cn("num px-2 py-2", b.pendingDays >= 30 && "font-semibold text-gov-red")}>{b.pendingDays}</td>
-                  <td className="px-2 py-2">{b.officer}</td>
                   <td className="px-2 py-2">
                     <Button size="sm" variant="outline" asChild>
                       <Link to="/beneficiaries/$id" params={{ id: b.id }}>

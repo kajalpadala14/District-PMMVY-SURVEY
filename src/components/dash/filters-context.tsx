@@ -42,7 +42,6 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     setError(null);
     const params = new URLSearchParams({
       action: "beneficiaries",
-      target: apiUrl,
     });
 
     fetch(`/api/sheet?${params.toString()}`)
@@ -80,8 +79,7 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
       const apiUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
       if (!apiUrl) throw new Error("VITE_GOOGLE_APPS_SCRIPT_URL is not configured.");
 
-      const params = new URLSearchParams({ target: apiUrl });
-      const response = await fetch(`/api/sheet?${params.toString()}`, {
+      const response = await fetch("/api/sheet", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ action: "updateSurvey", ...payload }),

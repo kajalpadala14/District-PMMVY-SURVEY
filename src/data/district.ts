@@ -1,6 +1,6 @@
 export const DISTRICT = "Dantewada";
 export const STATE = "Chhattisgarh";
-export const SCHEME = "मातृ वंदन योजना";
+export const SCHEME = "Mahtari Vandan Yojana";
 export const AS_OF = "Live sheet data";
 
 export const PENDING_REASONS = [

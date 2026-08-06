@@ -48,7 +48,6 @@ function Villages() {
                 <th className="px-2 py-2">Pending</th>
                 <th className="px-2 py-2">Completed</th>
                 <th className="px-2 py-2">Survey %</th>
-                <th className="px-2 py-2">Officer</th>
                 <th className="px-2 py-2">Last Survey</th>
                 <th className="px-2 py-2">Critical</th>
                 <th className="px-2 py-2" />
@@ -69,7 +68,6 @@ function Villages() {
                       <StatusPill value={v.surveyPct} />
                     </div>
                   </td>
-                  <td className="px-2 py-2">{v.officer}</td>
                   <td className="num px-2 py-2">{v.lastSurvey ?? "--"}</td>
                   <td className="px-2 py-2">
                     {v.critical > 0 ? (

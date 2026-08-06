@@ -60,7 +60,6 @@ function Blocks() {
                 <th className="px-2 py-2">Adr-Bank</th>
                 <th className="px-2 py-2">Other</th>
                 <th className="px-2 py-2">Avg Res.</th>
-                <th className="px-2 py-2">Officers</th>
                 <th className="px-2 py-2">Score</th>
                 <th className="px-2 py-2">Status</th>
                 <th className="px-2 py-2" />
@@ -83,7 +82,6 @@ function Blocks() {
                   <td className="num px-2 py-2">{b.link}</td>
                   <td className="num px-2 py-2">{b.other}</td>
                   <td className="num px-2 py-2">{b.avgRes}d</td>
-                  <td className="num px-2 py-2">{b.officers}</td>
                   <td className="num px-2 py-2 font-semibold">{b.score}</td>
                   <td className="px-2 py-2">
                     <StatusPill value={b.surveyPct} />

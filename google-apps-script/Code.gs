@@ -36,11 +36,12 @@ function doGet(e) {
       return jsonResponse({ ok: true, data: row || null });
     }
 
+    const beneficiaries = getBeneficiaries_();
     return jsonResponse({
       ok: true,
-      data: getBeneficiaries_(),
+      data: beneficiaries,
       meta: {
-        count: getBeneficiaries_().length,
+        count: beneficiaries.length,
         asOf: Utilities.formatDate(new Date(), "Asia/Kolkata", "dd MMM yyyy, HH:mm 'IST'"),
       },
     });
