@@ -4,7 +4,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useFilters } from "@/components/dash/filters-context";
 import { Panel, PageTitle } from "@/components/dash/panel";
-import { REGISTRATION_ISSUES, REGISTRATION_REASONS } from "@/data/district";
+import { REGISTRATION_ISSUES } from "@/data/district";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,7 +53,6 @@ function Detail() {
   const row = allRows.find((item) => item.id === id);
   const [registrationStatus, setRegistrationStatus] = useState<YesNo>("");
   const [reasonKnown, setReasonKnown] = useState<YesNo>("");
-  const [registrationReason, setRegistrationReason] = useState("");
   const [issue, setIssue] = useState("");
   const [surveyDate, setSurveyDate] = useState(new Date().toISOString().slice(0, 10));
   const [remark, setRemark] = useState("");
@@ -70,7 +69,6 @@ function Detail() {
 
     setRegistrationStatus(inferredRegistrationStatus);
     setReasonKnown(savedReasonKnown || (inferredRegistrationStatus === "No" && row?.issue ? "Yes" : ""));
-    setRegistrationReason(row?.registrationReason ?? "");
     setIssue(row?.issue ?? "");
     setSurveyDate(row?.lastSurvey ?? new Date().toISOString().slice(0, 10));
     setRemark(row?.remark ?? "");
@@ -130,9 +128,9 @@ function Detail() {
       return;
     }
 
-    if (registrationStatus === "No" && reasonKnown === "Yes" && (!registrationReason || !issue)) {
-      toast.error("Reason and issue required", {
-        description: "Select both fields before submitting the survey.",
+    if (registrationStatus === "No" && reasonKnown === "Yes" && !issue) {
+      toast.error("Issue required", {
+        description: "Select the issue before submitting the survey.",
       });
       return;
     }
@@ -152,7 +150,7 @@ function Detail() {
         surveyStatus: nextSurveyStatus,
         registrationStatus,
         reasonKnown: registrationStatus === "No" ? reasonKnown : undefined,
-        registrationReason: registrationStatus === "No" && reasonKnown === "Yes" ? registrationReason : "",
+        registrationReason: "",
         issue: registrationStatus === "No" && reasonKnown === "Yes" ? issue : "",
       });
       toast.success(caseStatus === "Resolved" ? "Case marked resolved" : "Survey saved", {
@@ -192,10 +190,9 @@ function Detail() {
   }
 
   const workflowStatus = getWorkflowStatus(registrationStatus, reasonKnown);
-  const submitEnabled = canSubmit(registrationStatus, reasonKnown, registrationReason, issue);
+  const submitEnabled = canSubmit(registrationStatus, reasonKnown, issue);
   const isExistingSurvey = row.surveyStatus !== "Pending" || timelineItems.length > 0;
   const primaryActionText = isExistingSurvey && registrationStatus !== "Yes" ? "Save Changes" : "Submit Survey";
-  const registrationReasonOptions = uniqueOptions([...REGISTRATION_REASONS, registrationReason]);
   const visibleTimelineItems = timelineItems.length > 0 ? timelineItems : buildFallbackTimeline(row);
 
   return (
@@ -261,7 +258,6 @@ function Detail() {
                     onValueChange={(value) => {
                       setRegistrationStatus(value as YesNo);
                       setReasonKnown("");
-                      setRegistrationReason("");
                       setIssue("");
                     }}
                     className="grid gap-2 sm:grid-cols-2"
@@ -291,7 +287,6 @@ function Detail() {
                         const next = value as YesNo;
                         setReasonKnown(next);
                         if (next === "No") {
-                          setRegistrationReason("");
                           setIssue("");
                         }
                       }}
@@ -308,39 +303,21 @@ function Detail() {
                 ) : null}
 
                 {registrationStatus === "No" && reasonKnown === "Yes" ? (
-                  <>
-                    <div className="grid gap-1.5">
-                      <Label className="text-xs">Reason</Label>
-                      <Select value={registrationReason} onValueChange={setRegistrationReason}>
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Select reason" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {registrationReasonOptions.map((reason) => (
-                            <SelectItem key={reason} value={reason}>
-                              {reason}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="grid gap-1.5">
-                      <Label className="text-xs">Issue</Label>
-                      <Select value={issue} onValueChange={setIssue}>
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Select issue" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {REGISTRATION_ISSUES.map((item) => (
-                            <SelectItem key={item} value={item}>
-                              {item}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </>
+                  <div className="grid gap-1.5">
+                    <Label className="text-xs">Issue</Label>
+                    <Select value={issue} onValueChange={setIssue}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Select issue" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {REGISTRATION_ISSUES.map((item) => (
+                          <SelectItem key={item} value={item}>
+                            {item}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 ) : null}
 
                 {registrationStatus !== "Yes" ? (
@@ -424,20 +401,16 @@ function getWorkflowStatus(registrationStatus: YesNo, reasonKnown: YesNo) {
   return "Pending";
 }
 
-function canSubmit(registrationStatus: YesNo, reasonKnown: YesNo, registrationReason: string, issue: string) {
+function canSubmit(registrationStatus: YesNo, reasonKnown: YesNo, issue: string) {
   if (registrationStatus === "Yes") return true;
   if (registrationStatus === "No" && reasonKnown === "No") return true;
-  if (registrationStatus === "No" && reasonKnown === "Yes") return Boolean(registrationReason && issue);
+  if (registrationStatus === "No" && reasonKnown === "Yes") return Boolean(issue);
   return false;
 }
 
 function issueToPendingReason(issue: string) {
   if (issue === "Document Missing" || issue === "Other") return "Other / Document";
   return issue;
-}
-
-function uniqueOptions(values: readonly string[]) {
-  return values.filter((value, index) => value && values.indexOf(value) === index);
 }
 
 function hasTimelineContent(item: TimelineItem) {

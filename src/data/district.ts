@@ -113,12 +113,14 @@ export function kpis(rows: Beneficiary[]) {
   const over30 = pending.filter((r) => r.pendingDays >= 30).length;
   const over7 = pending.filter((r) => r.pendingDays >= 7).length;
   const high = pending.filter((r) => r.priority === "High").length;
+  const issueNoCount = PENDING_REASONS.reduce((sum, reason) => sum + reasonCount(pending, reason), 0);
   return {
     total,
     pending: pending.length,
     resolved,
     surveyDone,
     surveyPending: total - surveyDone,
+    issueNoCount,
     surveyProgress: total ? Math.round((surveyDone / total) * 1000) / 10 : 0,
     pendingPct: total ? Math.round((pending.length / total) * 1000) / 10 : 0,
     over7,
@@ -264,6 +266,11 @@ export function villageStats(rows: Beneficiary[]) {
         surveyPct: rs.length ? Math.round((completed / rs.length) * 1000) / 10 : 0,
         officer: rs[0]?.officer ?? "",
         lastSurvey: last,
+        mcp: reasonCount(rs, "MCP Card Missing"),
+        bank: reasonCount(rs, "Bank Account Issue"),
+        aadhaar: reasonCount(rs, "Aadhaar Mismatch"),
+        link: reasonCount(rs, "Aadhaar-Bank Link"),
+        other: reasonCount(rs, "Other / Document"),
         critical: rs.filter((r) => r.priority === "High" && r.caseStatus === "Pending").length,
       };
     })
@@ -330,7 +337,7 @@ export function alerts(rows: Beneficiary[]) {
 }
 
 function reasonCount(rows: Beneficiary[], reason: PendingReason) {
-  return rows.filter((r) => r.reason === reason || r.reasons?.includes(reason)).length;
+  return rows.filter((r) => r.issueFlags?.[reason] || r.reason === reason || r.reasons?.includes(reason)).length;
 }
 
 function groupBy<T>(rows: T[], getKey: (row: T) => string) {

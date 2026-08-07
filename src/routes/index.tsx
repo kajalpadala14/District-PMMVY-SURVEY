@@ -102,6 +102,7 @@ function SinglePageDashboard() {
           <KpiCard label="Survey Pending" value={k.surveyPending.toLocaleString("en-IN")} icon={ClipboardList} tone="amber" />
           <KpiCard label="Resolved Cases" value={k.resolved.toLocaleString("en-IN")} icon={BadgeCheck} tone="green" />
           <KpiCard label="Pending Cases" value={k.pending.toLocaleString("en-IN")} icon={ClipboardList} tone="red" />
+          <KpiCard label="Issue No Count" value={k.issueNoCount.toLocaleString("en-IN")} icon={ClipboardList} tone="red" />
         </div>
 
         <div className="grid gap-3 xl:grid-cols-3">
@@ -133,11 +134,11 @@ function SinglePageDashboard() {
                     <th className="px-2 py-2">Blocks</th>
                     <th className="px-2 py-2">GPs</th>
                     <th className="px-2 py-2">Villages</th>
-                    <th className="px-2 py-2">MCP</th>
-                    <th className="px-2 py-2">Bank</th>
-                    <th className="px-2 py-2">Aadhaar</th>
-                    <th className="px-2 py-2">Adr-Bank</th>
-                    <th className="px-2 py-2">Other</th>
+                    <th className="px-2 py-2">MCP No</th>
+                    <th className="px-2 py-2">Bank No</th>
+                    <th className="px-2 py-2">Aadhaar No</th>
+                    <th className="px-2 py-2">Adr-Bank No</th>
+                    <th className="px-2 py-2">Other No</th>
                     <th className="px-2 py-2">Score</th>
                     <th className="px-2 py-2">Status</th>
                     <th className="px-2 py-2" />
@@ -166,11 +167,11 @@ function SinglePageDashboard() {
                   <th className="px-2 py-2">Survey Done</th>
                   <th className="px-2 py-2">Resolved</th>
                   <th className="px-2 py-2">Survey %</th>
-                  <th className="px-2 py-2">MCP</th>
-                  <th className="px-2 py-2">Bank</th>
-                  <th className="px-2 py-2">Aadhaar</th>
-                  <th className="px-2 py-2">Adr-Bank</th>
-                  <th className="px-2 py-2">Other</th>
+                  <th className="px-2 py-2">MCP No</th>
+                  <th className="px-2 py-2">Bank No</th>
+                  <th className="px-2 py-2">Aadhaar No</th>
+                  <th className="px-2 py-2">Adr-Bank No</th>
+                  <th className="px-2 py-2">Other No</th>
                   <th className="px-2 py-2">Score</th>
                   <th className="px-2 py-2">Status</th>
                   <th className="px-2 py-2" />
@@ -188,7 +189,7 @@ function SinglePageDashboard() {
         </Panel>
         <Panel title="Gram Panchayat Queue" subtitle={`${gs.length} Gram Panchayats in current selection`}>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] text-xs">
+            <table className="w-full min-w-[1120px] text-xs">
               <thead>
                 <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                   <th className="px-2 py-2">Gram Panchayat</th>
@@ -196,6 +197,11 @@ function SinglePageDashboard() {
                   <th className="px-2 py-2">Villages</th>
                   <th className="px-2 py-2">Pending</th>
                   <th className="px-2 py-2">Completed</th>
+                  <th className="px-2 py-2">MCP No</th>
+                  <th className="px-2 py-2">Bank No</th>
+                  <th className="px-2 py-2">Aadhaar No</th>
+                  <th className="px-2 py-2">Adr-Bank No</th>
+                  <th className="px-2 py-2">Other No</th>
                   <th className="px-2 py-2">Survey %</th>
                   <th className="px-2 py-2">High Priority</th>
                   <th className="px-2 py-2" />
@@ -209,6 +215,11 @@ function SinglePageDashboard() {
                     <td className="num px-2 py-2">{g.villages}</td>
                     <td className="num px-2 py-2 font-semibold text-gov-red">{g.pending}</td>
                     <td className="num px-2 py-2">{g.completed}</td>
+                    <td className="num px-2 py-2">{g.mcp}</td>
+                    <td className="num px-2 py-2">{g.bank}</td>
+                    <td className="num px-2 py-2">{g.aadhaar}</td>
+                    <td className="num px-2 py-2">{g.link}</td>
+                    <td className="num px-2 py-2">{g.other}</td>
                     <td className="px-2 py-2"><Bar value={g.surveyPct} tone={g.surveyPct >= 70 ? "green" : "red"} /></td>
                     <td className="num px-2 py-2">{g.high}</td>
                     <td className="px-2 py-2">

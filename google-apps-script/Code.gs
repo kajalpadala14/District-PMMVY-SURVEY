@@ -180,10 +180,10 @@ function updateSurvey_(body) {
 
   const before = getBeneficiaries_()[targetRowIndex - 1];
 
-  const selectedReasons = normalizeReasons_(body.reasons || body.reason || []);
+  const selectedReasons = normalizeReasons_(body.issue || body.reasons || body.reason || []);
   ISSUE_COLUMNS.forEach(function (issue) {
     const column = ensureHeader_(sheet, headers, issue.header);
-    sheet.getRange(targetRowIndex + 1, column + 1).setValue(selectedReasons.indexOf(issue.reason) >= 0 ? "YES" : "");
+    sheet.getRange(targetRowIndex + 1, column + 1).setValue(selectedReasons.indexOf(issue.reason) >= 0 ? "NO" : "YES");
   });
 
   const pendingReasonColumn = ensureHeader_(sheet, headers, "PENDING REASON");
@@ -206,7 +206,7 @@ function updateSurvey_(body) {
 
   if (body.issue !== undefined) {
     const issueColumn = ensureHeader_(sheet, headers, "ISSUE SELECTED");
-    sheet.getRange(targetRowIndex + 1, issueColumn + 1).setValue(body.issue);
+    sheet.getRange(targetRowIndex + 1, issueColumn + 1).setValue(normalizeIssueText_(body.issue));
   }
 
   if (body.remark !== undefined) {
@@ -278,6 +278,36 @@ function getTimeline_(id) {
     .sort(function (a, b) {
       return String(a.time || a.date).localeCompare(String(b.time || b.date));
     });
+}
+
+function clearTimelineForChadni() {
+  return clearTimelineForBeneficiary_("Chadni");
+}
+
+function clearTimelineForBeneficiary_(query) {
+  const sheet = getTimelineSheet_(false);
+  if (!sheet) return 0;
+
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length < 2) return 0;
+
+  const headers = values[0].map(normalizeHeader_);
+  const text = String(query || "").trim().toUpperCase();
+  if (!text) return 0;
+
+  let deleted = 0;
+  for (let rowIndex = values.length - 1; rowIndex >= 1; rowIndex -= 1) {
+    const row = values[rowIndex];
+    const beneficiaryId = getCell_(row, headers, ["BENEFICIARY ID"]);
+    const appId = getCell_(row, headers, ["APPLICATION ID"]);
+    const name = getCell_(row, headers, ["BENEFICIARY NAME", "NAME"]);
+    const haystack = [beneficiaryId, appId, name].join(" ").toUpperCase();
+    if (haystack.indexOf(text) >= 0) {
+      sheet.deleteRow(rowIndex + 1);
+      deleted += 1;
+    }
+  }
+  return deleted;
 }
 
 function appendTimeline_(beneficiary, text, detail, body) {
@@ -385,9 +415,13 @@ function getSheet_() {
 }
 
 function getReasons_(row, headers) {
+  const hasNoIssueValue = ISSUE_COLUMNS.some(function (issue) {
+    return isNo_(getCell_(row, headers, [issue.header]));
+  });
+
   return ISSUE_COLUMNS.filter(function (issue) {
     const value = getCell_(row, headers, [issue.header]);
-    return isMarked_(value);
+    return hasNoIssueValue ? isNo_(value) : isMarked_(value);
   }).map(function (issue) {
     return issue.reason;
   });
@@ -429,8 +463,13 @@ function unique_(values) {
 
 function getIssueFlags_(row, headers) {
   const flags = {};
+  const hasNoIssueValue = ISSUE_COLUMNS.some(function (issue) {
+    return isNo_(getCell_(row, headers, [issue.header]));
+  });
+
   ISSUE_COLUMNS.forEach(function (issue) {
-    flags[issue.reason] = isMarked_(getCell_(row, headers, [issue.header]));
+    const value = getCell_(row, headers, [issue.header]);
+    flags[issue.reason] = hasNoIssueValue ? isNo_(value) : isMarked_(value);
   });
   return flags;
 }
@@ -472,6 +511,24 @@ function normalizeProject_(value) {
 function isMarked_(value) {
   const text = String(value || "").trim().toUpperCase();
   return ["YES", "Y", "TRUE", "1", "DONE", "PENDING", "CHECKED", "✓"].indexOf(text) >= 0;
+}
+
+function isNo_(value) {
+  const text = String(value || "").trim().toUpperCase();
+  return ["NO", "N", "FALSE", "0", "NAHI", "NAHIN", "NHI", "नहीं", "नही"].indexOf(text) >= 0;
+}
+
+function normalizeIssueText_(value) {
+  const text = stripHindi_(String(value || "").replace(/[^\x00-\x7F]+/g, "")).trim();
+  const upper = text.toUpperCase();
+  if (upper === "DOCUMENT MISSING") return "Document Missing";
+  if (upper === "OTHER") return "Other";
+
+  const reasons = normalizeReasons_(value);
+  if (reasons.length) {
+    return reasons[0] === "Other / Document" ? "Document Missing" : reasons[0];
+  }
+  return text;
 }
 
 function maskAadhaar_(value) {

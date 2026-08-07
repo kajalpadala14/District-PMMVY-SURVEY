@@ -38,7 +38,7 @@ function Villages() {
 
       <Panel title="Village Scorecard" subtitle={`${vs.length} villages in current selection`}>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-xs">
+          <table className="w-full min-w-[1180px] text-xs">
             <thead>
               <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                 <th className="px-2 py-2">Village</th>
@@ -47,6 +47,11 @@ function Villages() {
                 <th className="px-2 py-2">Beneficiaries</th>
                 <th className="px-2 py-2">Pending</th>
                 <th className="px-2 py-2">Completed</th>
+                <th className="px-2 py-2">MCP No</th>
+                <th className="px-2 py-2">Bank No</th>
+                <th className="px-2 py-2">Aadhaar No</th>
+                <th className="px-2 py-2">Adr-Bank No</th>
+                <th className="px-2 py-2">Other No</th>
                 <th className="px-2 py-2">Survey %</th>
                 <th className="px-2 py-2">Last Survey</th>
                 <th className="px-2 py-2">Critical</th>
@@ -62,6 +67,11 @@ function Villages() {
                   <td className="num px-2 py-2">{v.total}</td>
                   <td className="num px-2 py-2 font-semibold text-gov-red">{v.pending}</td>
                   <td className="num px-2 py-2">{v.completed}</td>
+                  <td className="num px-2 py-2">{v.mcp}</td>
+                  <td className="num px-2 py-2">{v.bank}</td>
+                  <td className="num px-2 py-2">{v.aadhaar}</td>
+                  <td className="num px-2 py-2">{v.link}</td>
+                  <td className="num px-2 py-2">{v.other}</td>
                   <td className="px-2 py-2">
                     <div className="flex items-center gap-2">
                       <Bar value={v.surveyPct} tone={v.surveyPct >= 70 ? "green" : "red"} />

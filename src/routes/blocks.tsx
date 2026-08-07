@@ -54,11 +54,11 @@ function Blocks() {
                 <th className="px-2 py-2">Survey Done</th>
                 <th className="px-2 py-2">Resolved</th>
                 <th className="px-2 py-2">Survey %</th>
-                <th className="px-2 py-2">MCP</th>
-                <th className="px-2 py-2">Bank</th>
-                <th className="px-2 py-2">Aadhaar</th>
-                <th className="px-2 py-2">Adr-Bank</th>
-                <th className="px-2 py-2">Other</th>
+                <th className="px-2 py-2">MCP No</th>
+                <th className="px-2 py-2">Bank No</th>
+                <th className="px-2 py-2">Aadhaar No</th>
+                <th className="px-2 py-2">Adr-Bank No</th>
+                <th className="px-2 py-2">Other No</th>
                 <th className="px-2 py-2">Score</th>
                 <th className="px-2 py-2">Status</th>
                 <th className="px-2 py-2" />
