@@ -1,26 +1,24 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   BadgeCheck,
-  CalendarCheck,
+  Boxes,
   CheckCircle2,
   ClipboardList,
   Download,
   FileSpreadsheet,
   Layers3,
   Landmark,
-  MapPin,
   Printer,
   Users,
 } from "lucide-react";
 import { useState } from "react";
-import { toast } from "sonner";
 
 import { useFilters } from "@/components/dash/filters-context";
 import { FilterPanel } from "@/components/dash/filter-panel";
 import { KpiCard } from "@/components/dash/kpi-card";
 import { Bar, Panel, StatusPill } from "@/components/dash/panel";
 import { HBar, ProgressDonut, ReasonPie, VBar } from "@/components/dash/charts";
-import { blockStats, gpStats, kpis, reasonStats, villageStats } from "@/data/district";
+import { blockStats, gpStats, kpis, projectStats, reasonStats } from "@/data/district";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -42,18 +40,19 @@ export const Route = createFileRoute("/")({
 
 const dashboardSections = [
   ["overview", "Overview"],
+  ["projects", "Projects"],
   ["blocks", "Blocks"],
   ["gps", "Gram Panchayats"],
-  ["villages", "Villages"],
 ] as const;
 
 function SinglePageDashboard() {
   const { rows, setFilter, activeCount, isLoading, error, isSheetConfigured } = useFilters();
   const [tab, setTab] = useState("dashboard");
   const k = kpis(rows);
+  const ps = projectStats(rows);
   const bs = blockStats(rows);
   const gs = gpStats(rows);
-  const vs = villageStats(rows);
+  const hasProjectData = ps.length > 0;
 
   return (
     <Tabs value={tab} onValueChange={setTab} className="space-y-4">
@@ -97,16 +96,17 @@ function SinglePageDashboard() {
         <section id="overview" className="scroll-mt-32 space-y-4">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
           <KpiCard label="Total Beneficiaries" value={k.total.toLocaleString("en-IN")} icon={Users} tone="navy" />
+          <KpiCard label="Projects" value={ps.length.toLocaleString("en-IN")} icon={Boxes} tone="blue" />
+          <KpiCard label="Blocks" value={new Set(rows.map((row) => row.block).filter(Boolean)).size.toLocaleString("en-IN")} icon={Layers3} tone="blue" />
           <KpiCard label="Survey Completed" value={k.surveyDone.toLocaleString("en-IN")} icon={CheckCircle2} tone="green" />
           <KpiCard label="Survey Pending" value={k.surveyPending.toLocaleString("en-IN")} icon={ClipboardList} tone="amber" />
           <KpiCard label="Resolved Cases" value={k.resolved.toLocaleString("en-IN")} icon={BadgeCheck} tone="green" />
           <KpiCard label="Pending Cases" value={k.pending.toLocaleString("en-IN")} icon={ClipboardList} tone="red" />
-          <KpiCard label="Today's Surveys" value={k.todaySurveys} icon={CalendarCheck} tone="blue" />
         </div>
 
         <div className="grid gap-3 xl:grid-cols-3">
           <Panel title="Block Wise Pending" subtitle="Pending beneficiaries by block">
-            <HBar data={bs} nameKey="block" valueKey="pending" tone="var(--gov-red)" />
+            <HBar data={bs} nameKey="blockLabel" valueKey="pending" tone="var(--gov-red)" />
           </Panel>
           <Panel title="Survey Progress" subtitle="Completed vs pending surveys">
             <ProgressDonut done={k.surveyDone} pending={k.surveyPending} />
@@ -115,6 +115,43 @@ function SinglePageDashboard() {
             <ReasonPie data={reasonStats(rows)} />
           </Panel>
         </div>
+      </section>
+
+      <section id="projects" className="scroll-mt-32">
+        <Panel title="Project Scorecard" subtitle="Click a project to filter the entire page">
+          {hasProjectData ? (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[1160px] text-xs">
+                <thead>
+                  <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+                    <th className="px-2 py-2">Project</th>
+                    <th className="px-2 py-2">Total</th>
+                    <th className="px-2 py-2">Pending</th>
+                    <th className="px-2 py-2">Survey Done</th>
+                    <th className="px-2 py-2">Resolved</th>
+                    <th className="px-2 py-2">Survey %</th>
+                    <th className="px-2 py-2">Blocks</th>
+                    <th className="px-2 py-2">GPs</th>
+                    <th className="px-2 py-2">Villages</th>
+                    <th className="px-2 py-2">MCP</th>
+                    <th className="px-2 py-2">Bank</th>
+                    <th className="px-2 py-2">Aadhaar</th>
+                    <th className="px-2 py-2">Adr-Bank</th>
+                    <th className="px-2 py-2">Other</th>
+                    <th className="px-2 py-2">Score</th>
+                    <th className="px-2 py-2">Status</th>
+                    <th className="px-2 py-2" />
+                  </tr>
+                </thead>
+                <tbody>{ps.map((p) => <ProjectRow key={p.project} p={p} onSelect={() => setFilter("project", p.project)} />)}</tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Project data is not loaded from the sheet backend yet. Redeploy the Apps Script after adding the PROJECT column.
+            </p>
+          )}
+        </Panel>
       </section>
 
       <section id="blocks" className="scroll-mt-32">
@@ -187,45 +224,6 @@ function SinglePageDashboard() {
         </Panel>
       </section>
 
-      <section id="villages" className="scroll-mt-32">
-        <Panel title="Village Monitoring" subtitle={`${vs.length} villages in current selection`}>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[920px] text-xs">
-              <thead>
-                <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
-                  <th className="px-2 py-2">Village</th>
-                  <th className="px-2 py-2">GP</th>
-                  <th className="px-2 py-2">Block</th>
-                  <th className="px-2 py-2">Beneficiaries</th>
-                  <th className="px-2 py-2">Pending</th>
-                  <th className="px-2 py-2">Survey %</th>
-                  <th className="px-2 py-2">Critical</th>
-                  <th className="px-2 py-2" />
-                </tr>
-              </thead>
-              <tbody>
-                {vs.slice(0, 15).map((v) => (
-                  <tr key={`${v.block}-${v.gp}-${v.village}`} className="border-b border-border/70 hover:bg-secondary/60">
-                    <td className="px-2 py-2 font-semibold">{v.village}</td>
-                    <td className="px-2 py-2">{v.gp}</td>
-                    <td className="px-2 py-2">{v.block}</td>
-                    <td className="num px-2 py-2">{v.total}</td>
-                    <td className="num px-2 py-2 font-semibold text-gov-red">{v.pending}</td>
-                    <td className="px-2 py-2"><Bar value={v.surveyPct} tone={v.surveyPct >= 70 ? "green" : "red"} /></td>
-                    <td className="num px-2 py-2">{v.critical}</td>
-                    <td className="px-2 py-2">
-                      <Button size="sm" variant="outline" onClick={() => setFilter("village", v.village)}>
-                        <MapPin className="size-3.5" /> Focus
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Panel>
-      </section>
-
       </TabsContent>
 
       <TabsContent value="beneficiaries" className="mt-0">
@@ -237,6 +235,7 @@ function SinglePageDashboard() {
               <thead>
                 <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                   <th className="px-2 py-2">Application ID</th>
+                  <th className="px-2 py-2">Project</th>
                   <th className="px-2 py-2">Name</th>
                   <th className="px-2 py-2">Village</th>
                   <th className="px-2 py-2">GP</th>
@@ -252,6 +251,7 @@ function SinglePageDashboard() {
                 {rows.map((b) => (
                   <tr key={b.id} className="border-b border-border/70 hover:bg-secondary/60">
                     <td className="num px-2 py-2">{b.appId}</td>
+                    <td className="px-2 py-2">{b.project}</td>
                     <td className="px-2 py-2 font-semibold">{b.name}</td>
                     <td className="px-2 py-2">{b.village}</td>
                     <td className="px-2 py-2">{b.gp}</td>
@@ -282,12 +282,12 @@ function SinglePageDashboard() {
       <section id="reports" className="scroll-mt-32">
         <Panel title="Report Actions" subtitle="Filter-aware exports" action={<Download className="size-4 text-muted-foreground" />}>
           <div className="grid gap-2">
-            {["District Summary", "Block Wise Report", "GP Report", "Village Report", "Pending Beneficiaries"].map((name) => (
+            {["District Summary", "Project Wise Report", "Block Wise Report", "GP Report", "Village Report", "Pending Beneficiaries"].map((name) => (
               <div key={name} className="flex items-center gap-2 rounded-md border border-border p-3">
                 <FileSpreadsheet className="size-4 text-gov-green" />
                 <span className="min-w-0 flex-1 text-sm font-semibold">{name}</span>
-                <Button size="sm" variant="outline" onClick={() => toast.success(`${name} export queued`)}>
-                  Export
+                <Button size="sm" variant="outline" onClick={() => window.print()}>
+                  Print
                 </Button>
               </div>
             ))}
@@ -299,6 +299,34 @@ function SinglePageDashboard() {
       </section>
       </TabsContent>
     </Tabs>
+  );
+}
+
+function ProjectRow({ p, onSelect }: { p: ReturnType<typeof projectStats>[number]; onSelect: () => void }) {
+  return (
+    <tr className="border-b border-border/70 hover:bg-secondary/60">
+      <td className="px-2 py-2 font-semibold">{p.project}</td>
+      <td className="num px-2 py-2">{p.total}</td>
+      <td className="num px-2 py-2 font-semibold text-gov-red">{p.pending}</td>
+      <td className="num px-2 py-2">{p.completed}</td>
+      <td className="num px-2 py-2 text-gov-green">{p.resolved}</td>
+      <td className="px-2 py-2"><Bar value={p.surveyPct} tone={p.surveyPct >= 70 ? "green" : "red"} /></td>
+      <td className="num px-2 py-2">{p.blocks}</td>
+      <td className="num px-2 py-2">{p.gps}</td>
+      <td className="num px-2 py-2">{p.villages}</td>
+      <td className="num px-2 py-2">{p.mcp}</td>
+      <td className="num px-2 py-2">{p.bank}</td>
+      <td className="num px-2 py-2">{p.aadhaar}</td>
+      <td className="num px-2 py-2">{p.link}</td>
+      <td className="num px-2 py-2">{p.other}</td>
+      <td className="num px-2 py-2 font-semibold">{p.score}</td>
+      <td className="px-2 py-2"><StatusPill value={p.surveyPct} /></td>
+      <td className="px-2 py-2">
+        <Button size="sm" variant="outline" onClick={onSelect}>
+          <Layers3 className="size-3.5" /> Focus
+        </Button>
+      </td>
+    </tr>
   );
 }
 

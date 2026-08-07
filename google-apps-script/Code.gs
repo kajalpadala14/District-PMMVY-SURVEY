@@ -1,8 +1,8 @@
 const CONFIG = {
   SHEET_NAME: "SURVEY",
   TIMELINE_SHEET_NAME: "TIMELINE",
-  DEFAULT_DISTRICT: "Dantewada",
-  DEFAULT_STATE: "Chhattisgarh",
+  DEFAULT_DISTRICT: "",
+  DEFAULT_STATE: "",
 };
 
 const ISSUE_COLUMNS = [
@@ -12,6 +12,10 @@ const ISSUE_COLUMNS = [
   { header: "AADHAAR-BANK LINK", reason: "Aadhaar-Bank Link" },
   { header: "OTHER", reason: "Other / Document" },
 ];
+
+const PROJECT_ALIASES = {
+  KATAKALYAN: "Katekalyan",
+};
 
 function doGet(e) {
   try {
@@ -101,7 +105,8 @@ function getBeneficiaries_() {
     })
     .map(function (row, index) {
       const serial = getCell_(row, headers, ["S.NO", "S NO", "SNO"]) || String(index + 1);
-      const block = getCell_(row, headers, ["BLOCK"]) || CONFIG.DEFAULT_DISTRICT;
+      const project = normalizeProject_(getCell_(row, headers, ["PROJECT", "PROJECT NAME", "PARIYOJANA", "परियोजना"]));
+      const block = getCell_(row, headers, ["BLOCK"]);
       const gp = getCell_(row, headers, ["GRAM PANCHAYAT", "GP"]);
       const village = getCell_(row, headers, ["VILLAGE"]);
       const name = getCell_(row, headers, ["MEMBER", "NAME", "BENEFICIARY NAME"]);
@@ -111,18 +116,25 @@ function getBeneficiaries_() {
       const remark = getCell_(row, headers, ["REMARK", "REMARKS"]);
       const pendingReasonText = getCell_(row, headers, ["PENDING REASON", "PENDING REASONS"]);
       const reasons = unique_(getReasons_(row, headers).concat(parseReasons_(pendingReasonText)));
-      const primaryReason = reasons[0] || "Other / Document";
+      const primaryReason = reasons[0] || "";
       const savedSurveyStatus = getCell_(row, headers, ["SURVEY STATUS"]);
       const savedCaseStatus = getCell_(row, headers, ["CASE STATUS"]);
-      const completed = savedSurveyStatus
-        ? savedSurveyStatus.toLowerCase() === "completed"
-        : reasons.length > 0 || remark !== "";
+      const registrationStatus = getCell_(row, headers, ["REGISTRATION STATUS", "BENEFICIARY REGISTERED"]);
+      const reasonKnown = getCell_(row, headers, ["REASON KNOWN"]);
+      const registrationReason = getCell_(row, headers, ["REGISTRATION REASON", "REASON"]);
+      const selectedIssue = getCell_(row, headers, ["ISSUE SELECTED", "ISSUE"]);
+      const hasRegistrationWorkflow = Boolean(registrationStatus || reasonKnown || registrationReason || selectedIssue);
+      const surveyStatus =
+        savedSurveyStatus && (savedSurveyStatus !== "Completed" || hasRegistrationWorkflow || savedCaseStatus === "Resolved")
+          ? savedSurveyStatus
+          : "Pending";
 
       return {
         id: "BEN" + pad_(serial, 5),
         appId: "MVY/" + String(block).slice(0, 3).toUpperCase() + "/" + pad_(serial, 5),
         serialNo: serial,
-        name: name || "Unnamed Beneficiary",
+        project: project,
+        name: name,
         age: age,
         gender: gender,
         guardian: guardian,
@@ -135,8 +147,12 @@ function getBeneficiaries_() {
         reason: primaryReason,
         reasons: reasons,
         caseStatus: savedCaseStatus || "Pending",
-        surveyStatus: completed ? "Completed" : "Pending",
-        officer: getCell_(row, headers, ["SURVEY OFFICER", "OFFICER", "ASSIGNED OFFICER"]) || "Unassigned",
+        surveyStatus: surveyStatus,
+        registrationStatus: registrationStatus,
+        reasonKnown: reasonKnown,
+        registrationReason: registrationReason,
+        issue: selectedIssue,
+        officer: getCell_(row, headers, ["SURVEY OFFICER", "OFFICER", "ASSIGNED OFFICER"]),
         pendingDays: Number(getCell_(row, headers, ["PENDING DAYS", "PENDING SINCE"])) || 0,
         lastSurvey: getCell_(row, headers, ["LAST SURVEY", "SURVEY DATE"]) || null,
         priority: getPriority_(Number(getCell_(row, headers, ["PENDING DAYS", "PENDING SINCE"])) || 0, reasons.length),
@@ -173,6 +189,26 @@ function updateSurvey_(body) {
   const pendingReasonColumn = ensureHeader_(sheet, headers, "PENDING REASON");
   sheet.getRange(targetRowIndex + 1, pendingReasonColumn + 1).setValue(selectedReasons.join(", "));
 
+  if (body.registrationStatus !== undefined) {
+    const registrationColumn = ensureHeader_(sheet, headers, "REGISTRATION STATUS");
+    sheet.getRange(targetRowIndex + 1, registrationColumn + 1).setValue(body.registrationStatus);
+  }
+
+  if (body.reasonKnown !== undefined) {
+    const reasonKnownColumn = ensureHeader_(sheet, headers, "REASON KNOWN");
+    sheet.getRange(targetRowIndex + 1, reasonKnownColumn + 1).setValue(body.reasonKnown);
+  }
+
+  if (body.registrationReason !== undefined) {
+    const registrationReasonColumn = ensureHeader_(sheet, headers, "REGISTRATION REASON");
+    sheet.getRange(targetRowIndex + 1, registrationReasonColumn + 1).setValue(body.registrationReason);
+  }
+
+  if (body.issue !== undefined) {
+    const issueColumn = ensureHeader_(sheet, headers, "ISSUE SELECTED");
+    sheet.getRange(targetRowIndex + 1, issueColumn + 1).setValue(body.issue);
+  }
+
   if (body.remark !== undefined) {
     const remarkColumn = ensureHeader_(sheet, headers, "REMARK");
     sheet.getRange(targetRowIndex + 1, remarkColumn + 1).setValue(body.remark);
@@ -189,7 +225,7 @@ function updateSurvey_(body) {
   }
 
   const surveyStatusColumn = ensureHeader_(sheet, headers, "SURVEY STATUS");
-  sheet.getRange(targetRowIndex + 1, surveyStatusColumn + 1).setValue("Completed");
+  sheet.getRange(targetRowIndex + 1, surveyStatusColumn + 1).setValue(body.surveyStatus || "Completed");
 
   if (body.caseStatus !== undefined) {
     const caseStatusColumn = ensureHeader_(sheet, headers, "CASE STATUS");
@@ -197,7 +233,9 @@ function updateSurvey_(body) {
   }
 
   const updated = getBeneficiaries_()[targetRowIndex - 1];
-  appendTimeline_(updated, buildTimelineText_(before, updated, body), body);
+  buildTimelineEvents_(before, updated, body).forEach(function (event) {
+    appendTimeline_(updated, event.action, event.detail, body);
+  });
   return updated;
 }
 
@@ -225,17 +263,28 @@ function getTimeline_(id) {
         text: getCell_(row, headers, ["EVENT"]),
         detail: getCell_(row, headers, ["DETAIL"]),
         officer: getCell_(row, headers, ["OFFICER"]),
+        status: getCell_(row, headers, ["STATUS", "CURRENT STATUS"]),
       };
     })
+    .filter(function (item) {
+      return Boolean(
+        String(item.date || "").trim() ||
+          String(item.time || "").trim() ||
+          String(item.text || "").trim() ||
+          String(item.detail || "").trim() ||
+          String(item.status || "").trim(),
+      );
+    })
     .sort(function (a, b) {
-      return String(b.time || b.date).localeCompare(String(a.time || a.date));
+      return String(a.time || a.date).localeCompare(String(b.time || b.date));
     });
 }
 
-function appendTimeline_(beneficiary, text, body) {
+function appendTimeline_(beneficiary, text, detail, body) {
   const sheet = getTimelineSheet_(true);
+  ensureTimelineHeaders_(sheet);
   const now = new Date();
-  const date = body.surveyDate || Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd");
+  const date = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd");
   const time = Utilities.formatDate(now, "Asia/Kolkata", "yyyy-MM-dd HH:mm:ss");
   sheet.appendRow([
     time,
@@ -244,16 +293,51 @@ function appendTimeline_(beneficiary, text, body) {
     beneficiary.appId,
     beneficiary.name,
     text,
-    beneficiary.remark || "",
+    detail || beneficiary.remark || "",
     beneficiary.officer || "",
+    beneficiary.surveyStatus || "",
   ]);
 }
 
-function buildTimelineText_(before, updated, body) {
-  if (body.caseStatus === "Resolved") return "Case marked resolved";
-  if (before && before.officer !== updated.officer) return "Survey officer updated";
-  if (before && String(before.reason) !== String(updated.reason)) return "Pending reason updated";
-  return "Survey saved";
+function buildTimelineEvents_(before, updated, body) {
+  const events = [];
+  const isFirstSubmission = !before || before.surveyStatus === "Pending";
+
+  if (!hasTimeline_(updated.id, updated.appId)) {
+    events.push({ action: "Survey Created", detail: "Record opened for field verification" });
+  }
+
+  if (!before || String(before.registrationStatus || "") !== String(updated.registrationStatus || "")) {
+    events.push({ action: "Registration Verified = " + (updated.registrationStatus || "Not set"), detail: "" });
+  }
+
+  if (before && String(before.surveyStatus || "") !== String(updated.surveyStatus || "")) {
+    events.push({ action: "Status changed to " + updated.surveyStatus, detail: "" });
+  }
+
+  if (updated.surveyStatus === "Reason Pending" && (!before || String(before.surveyStatus || "") !== "Reason Pending")) {
+    events.push({ action: "Status = Reason Pending", detail: "Reason and issue can be updated later" });
+  }
+
+  if (!before || String(before.registrationReason || "") !== String(updated.registrationReason || "")) {
+    if (updated.registrationReason) events.push({ action: "Reason Added", detail: updated.registrationReason });
+  }
+
+  if (!before || String(before.issue || "") !== String(updated.issue || "")) {
+    if (updated.issue) events.push({ action: "Issue Added", detail: updated.issue });
+  }
+
+  if (before && String(before.remark || "") !== String(updated.remark || "")) {
+    events.push({ action: "Remarks Updated", detail: updated.remark || "" });
+  }
+
+  if (body.caseStatus === "Resolved") {
+    events.push({ action: "Survey Completed", detail: "Case marked resolved" });
+  } else {
+    events.push({ action: isFirstSubmission ? "Survey Submitted" : "Survey Updated", detail: "" });
+  }
+
+  return events;
 }
 
 function getTimelineSheet_(createIfMissing) {
@@ -261,9 +345,37 @@ function getTimelineSheet_(createIfMissing) {
   let sheet = spreadsheet.getSheetByName(CONFIG.TIMELINE_SHEET_NAME);
   if (!sheet && createIfMissing) {
     sheet = spreadsheet.insertSheet(CONFIG.TIMELINE_SHEET_NAME);
-    sheet.appendRow(["TIME", "DATE", "BENEFICIARY ID", "APPLICATION ID", "BENEFICIARY NAME", "EVENT", "DETAIL", "OFFICER"]);
+    sheet.appendRow(["TIME", "DATE", "BENEFICIARY ID", "APPLICATION ID", "BENEFICIARY NAME", "EVENT", "DETAIL", "OFFICER", "STATUS"]);
   }
   return sheet;
+}
+
+function ensureTimelineHeaders_(sheet) {
+  const values = sheet.getDataRange().getDisplayValues();
+  if (!values.length) {
+    sheet.appendRow(["TIME", "DATE", "BENEFICIARY ID", "APPLICATION ID", "BENEFICIARY NAME", "EVENT", "DETAIL", "OFFICER", "STATUS"]);
+    return;
+  }
+
+  const headers = values[0].map(normalizeHeader_);
+  ["TIME", "DATE", "BENEFICIARY ID", "APPLICATION ID", "BENEFICIARY NAME", "EVENT", "DETAIL", "OFFICER", "STATUS"].forEach(function (header) {
+    ensureHeader_(sheet, headers, header);
+  });
+}
+
+function hasTimeline_(beneficiaryId, appId) {
+  const sheet = getTimelineSheet_(false);
+  if (!sheet) return false;
+
+  const values = sheet.getDataRange().getDisplayValues();
+  if (values.length < 2) return false;
+
+  const headers = values[0].map(normalizeHeader_);
+  return values.slice(1).some(function (row) {
+    const savedBeneficiaryId = getCell_(row, headers, ["BENEFICIARY ID"]);
+    const savedAppId = getCell_(row, headers, ["APPLICATION ID"]);
+    return savedBeneficiaryId === beneficiaryId || savedAppId === appId;
+  });
 }
 
 function getSheet_() {
@@ -350,6 +462,11 @@ function normalizeHeader_(value) {
     .replace(/\s+/g, " ")
     .trim()
     .toUpperCase();
+}
+
+function normalizeProject_(value) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  return PROJECT_ALIASES[text.toUpperCase()] || text;
 }
 
 function isMarked_(value) {

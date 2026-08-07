@@ -47,6 +47,7 @@ function GramPanchayats() {
             <thead>
               <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                 <th className="px-2 py-2">Gram Panchayat</th>
+                <th className="px-2 py-2">Project</th>
                 <th className="px-2 py-2">Block</th>
                 <th className="px-2 py-2">Villages</th>
                 <th className="px-2 py-2">Pending</th>
@@ -66,6 +67,7 @@ function GramPanchayats() {
               {view.map((g) => (
                 <tr key={`${g.block}-${g.gp}`} className="border-b border-border/70 hover:bg-secondary/60">
                   <td className="px-2 py-2 font-semibold">{g.gp}</td>
+                  <td className="px-2 py-2">{g.project}</td>
                   <td className="px-2 py-2">{g.block}</td>
                   <td className="num px-2 py-2">{g.villages}</td>
                   <td className="num px-2 py-2 font-semibold text-gov-red">{g.pending}</td>

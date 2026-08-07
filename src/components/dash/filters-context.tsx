@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   applyFilters,
+  normalizeProjectName,
   type Beneficiary,
   type Filters,
 } from "@/data/district";
@@ -23,6 +24,11 @@ interface Ctx {
     officer?: string;
     surveyDate?: string;
     caseStatus?: string;
+    surveyStatus?: string;
+    registrationStatus?: "Yes" | "No";
+    reasonKnown?: "Yes" | "No";
+    registrationReason?: string;
+    issue?: string;
   }) => Promise<Beneficiary>;
 }
 
@@ -51,7 +57,7 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
       })
       .then((payload) => {
         if (!payload.ok || !Array.isArray(payload.data)) throw new Error(payload.error || "Invalid sheet API response");
-        setSourceRows(payload.data);
+        setSourceRows(payload.data.map(normalizeBeneficiarySurveyStatus));
       })
       .catch((error) => {
         console.error(error);
@@ -66,6 +72,11 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     const setFilter = (key: keyof Filters, v: string) =>
       setFilters((prev) => {
         const next: Record<string, string | undefined> = { ...prev, [key]: v || undefined };
+        if (key === "project") {
+          delete next["block"];
+          delete next["gp"];
+          delete next["village"];
+        }
         if (key === "block") {
           delete next["gp"];
           delete next["village"];
@@ -89,8 +100,9 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
         throw new Error(result.error || "Unable to save survey.");
       }
 
-      setSourceRows((current) => current.map((row) => (row.id === result.data.id ? result.data : row)));
-      return result.data;
+      const updated = normalizeBeneficiarySurveyStatus(result.data);
+      setSourceRows((current) => current.map((row) => (row.id === updated.id ? updated : row)));
+      return updated;
     };
 
     return {
@@ -114,4 +126,14 @@ export function useFilters() {
   const ctx = useContext(FiltersContext);
   if (!ctx) throw new Error("useFilters must be used inside FiltersProvider");
   return ctx;
+}
+
+function normalizeBeneficiarySurveyStatus(row: Beneficiary): Beneficiary {
+  const project = normalizeProjectName(row.project);
+  const hasRegistrationWorkflow = Boolean(row.registrationStatus || row.reasonKnown || row.registrationReason || row.issue);
+  const normalized = project !== row.project ? { ...row, project } : row;
+  if (row.surveyStatus === "Completed" && !hasRegistrationWorkflow && row.caseStatus !== "Resolved") {
+    return { ...normalized, surveyStatus: "Pending" };
+  }
+  return normalized;
 }

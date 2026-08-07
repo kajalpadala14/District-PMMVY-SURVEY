@@ -42,6 +42,7 @@ function Beneficiaries() {
             <thead>
               <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                 <th className="px-2 py-2">Application ID</th>
+                <th className="px-2 py-2">Project</th>
                 <th className="px-2 py-2">Name</th>
                 <th className="px-2 py-2">Village</th>
                 <th className="px-2 py-2">GP</th>
@@ -57,6 +58,7 @@ function Beneficiaries() {
               {view.map((b) => (
                 <tr key={b.id} className="border-b border-border/70 hover:bg-secondary/60">
                   <td className="num px-2 py-2">{b.appId}</td>
+                  <td className="px-2 py-2">{b.project}</td>
                   <td className="px-2 py-2 font-semibold">{b.name}</td>
                   <td className="px-2 py-2">{b.village}</td>
                   <td className="px-2 py-2">{b.gp}</td>

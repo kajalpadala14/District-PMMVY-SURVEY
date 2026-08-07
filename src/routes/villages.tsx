@@ -68,7 +68,7 @@ function Villages() {
                       <StatusPill value={v.surveyPct} />
                     </div>
                   </td>
-                  <td className="num px-2 py-2">{v.lastSurvey ?? "--"}</td>
+                  <td className="num px-2 py-2">{v.lastSurvey}</td>
                   <td className="px-2 py-2">
                     {v.critical > 0 ? (
                       <Badge variant="outline" className="border-gov-red/40 bg-gov-red-soft text-gov-red">

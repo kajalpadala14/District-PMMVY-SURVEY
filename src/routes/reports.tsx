@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FileSpreadsheet, FileText, Printer, Table2 } from "lucide-react";
-import { toast } from "sonner";
+import { Printer } from "lucide-react";
 import { FilterPanel } from "@/components/dash/filter-panel";
 import { useFilters } from "@/components/dash/filters-context";
 import { Panel, PageTitle } from "@/components/dash/panel";
@@ -13,10 +12,10 @@ export const Route = createFileRoute("/reports")({
       { title: "Reports & Export | MVY District Command Centre" },
       {
         name: "description",
-        content: "Download district, block, GP, pending and resolved reports in Excel, CSV or PDF respecting active filters.",
+        content: "Print filter-aware district, project, block, GP, pending and resolved reports.",
       },
       { property: "og:title", content: "Reports & Export | MVY District Command Centre" },
-      { property: "og:description", content: "Filter-aware report downloads for district review and monitoring." },
+      { property: "og:description", content: "Filter-aware report views for district review and monitoring." },
     ],
   }),
   component: Reports,
@@ -24,21 +23,17 @@ export const Route = createFileRoute("/reports")({
 
 const REPORTS = [
   ["District Summary Report", "Consolidated KPIs, block ranking and issue distribution"],
+  ["Project Wise Report", "Project level pending load, survey progress and issue split"],
   ["Block Wise Report", "Pending, resolved, survey % and issue split per block"],
   ["Gram Panchayat Report", "GP level pending load with high priority cases"],
-  ["Village Report", "Village pending, survey % and assigned officer"],
+  ["Village Report", "Village pending and survey percentage"],
   ["Pending Beneficiary Report", "All pending cases with reason and ageing"],
-  ["Resolved Cases Report", "Closed cases with resolution time"],
-  ["Survey Progress Report", "Daily survey and resolution trend"],
+  ["Resolved Cases Report", "Closed cases"],
+  ["Survey Progress Report", "Survey completion status from current records"],
 ] as const;
 
 function Reports() {
-  const { rows, activeCount } = useFilters();
-
-  const dl = (name: string, format: string) =>
-    toast.success(`${name} — ${format}`, {
-      description: `${rows.length.toLocaleString("en-IN")} records · ${activeCount} filter(s) applied`,
-    });
+  const { rows } = useFilters();
 
   return (
     <>
@@ -47,7 +42,7 @@ function Reports() {
 
       <Panel
         title="Available Reports"
-        subtitle="Excel, CSV and PDF formats"
+        subtitle="Print-ready report views"
         action={
           <Badge variant="secondary" className="num">
             {rows.length.toLocaleString("en-IN")} records in scope
@@ -61,24 +56,14 @@ function Reports() {
                 <p className="text-sm font-semibold text-foreground">{name}</p>
                 <p className="text-[11px] text-muted-foreground">{desc}</p>
               </div>
-              <Button size="sm" variant="outline" onClick={() => dl(name, "Excel")}>
-                <FileSpreadsheet className="size-3.5" /> Excel
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => dl(name, "CSV")}>
-                <Table2 className="size-3.5" /> CSV
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => dl(name, "PDF")}>
-                <FileText className="size-3.5" /> PDF
+              <Button size="sm" variant="outline" onClick={() => window.print()}>
+                <Printer className="size-3.5" /> Print
               </Button>
             </div>
           ))}
         </div>
 
         <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
-          <Button onClick={() => dl("Current Dashboard", "PDF")}>Export dashboard as PDF</Button>
-          <Button variant="outline" onClick={() => dl("Current Dashboard", "Excel")}>
-            Export as Excel
-          </Button>
           <Button variant="outline" onClick={() => window.print()}>
             <Printer className="size-4" /> Print view
           </Button>

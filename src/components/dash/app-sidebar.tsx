@@ -2,7 +2,6 @@ import { Link, useRouterState } from "@tanstack/react-router";
 import {
   LayoutDashboard,
   Landmark,
-  Home,
   Users,
   BellRing,
   FileDown,
@@ -23,7 +22,6 @@ import {
 const monitoring = [
   { title: "Executive Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Gram Panchayat", url: "/gram-panchayats", icon: Landmark },
-  { title: "Village Monitoring", url: "/villages", icon: Home },
 ];
 
 const operations = [

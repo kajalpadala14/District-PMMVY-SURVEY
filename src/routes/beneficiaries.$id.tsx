@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, ChevronDown, MapPin, Save } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useFilters } from "@/components/dash/filters-context";
 import { Panel, PageTitle } from "@/components/dash/panel";
-import { PENDING_REASONS } from "@/data/district";
+import { REGISTRATION_ISSUES, REGISTRATION_REASONS } from "@/data/district";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -21,7 +20,10 @@ interface TimelineItem {
   text: string;
   detail?: string;
   officer?: string;
+  status?: string;
 }
+
+type YesNo = "Yes" | "No" | "";
 
 export const Route = createFileRoute("/beneficiaries/$id")({
   loader: ({ params }) => {
@@ -49,9 +51,10 @@ function Detail() {
   const { id } = Route.useLoaderData();
   const { allRows, isLoading, isSheetConfigured, error, updateSurvey } = useFilters();
   const row = allRows.find((item) => item.id === id);
-  const officers = [...new Set(allRows.map((item) => item.officer).filter((officer) => officer && officer !== "Unassigned"))].sort();
-  const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
-  const [officer, setOfficer] = useState("");
+  const [registrationStatus, setRegistrationStatus] = useState<YesNo>("");
+  const [reasonKnown, setReasonKnown] = useState<YesNo>("");
+  const [registrationReason, setRegistrationReason] = useState("");
+  const [issue, setIssue] = useState("");
   const [surveyDate, setSurveyDate] = useState(new Date().toISOString().slice(0, 10));
   const [remark, setRemark] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -60,18 +63,18 @@ function Detail() {
   const [timelineError, setTimelineError] = useState<string | null>(null);
 
   useEffect(() => {
-    setSelectedReasons(row ? (row.reasons?.length ? row.reasons : []) : []);
-    setOfficer(row?.officer && row.officer !== "Unassigned" ? row.officer : "");
+    const savedRegistrationStatus = row?.registrationStatus === "Yes" || row?.registrationStatus === "No" ? row.registrationStatus : "";
+    const inferredRegistrationStatus =
+      savedRegistrationStatus || (row?.surveyStatus === "In Progress" ? "Yes" : row?.surveyStatus === "Reason Pending" || row?.issue ? "No" : "");
+    const savedReasonKnown = row?.reasonKnown === "Yes" || row?.reasonKnown === "No" ? row.reasonKnown : "";
+
+    setRegistrationStatus(inferredRegistrationStatus);
+    setReasonKnown(savedReasonKnown || (inferredRegistrationStatus === "No" && row?.issue ? "Yes" : ""));
+    setRegistrationReason(row?.registrationReason ?? "");
+    setIssue(row?.issue ?? "");
     setSurveyDate(row?.lastSurvey ?? new Date().toISOString().slice(0, 10));
     setRemark(row?.remark ?? "");
   }, [row]);
-
-  const toggleReason = (reason: string, checked: boolean) => {
-    setSelectedReasons((current) => {
-      if (checked) return current.includes(reason) ? current : [...current, reason];
-      return current.filter((item) => item !== reason);
-    });
-  };
 
   const loadTimeline = useCallback(
     async (beneficiaryId: string) => {
@@ -90,7 +93,7 @@ function Detail() {
         if (!response.ok || !payload.ok || !Array.isArray(payload.data)) {
           throw new Error(payload.error || "Unable to load timeline.");
         }
-        setTimelineItems(payload.data);
+        setTimelineItems(payload.data.filter(hasTimelineContent));
       } catch (error) {
         setTimelineItems([]);
         setTimelineError(error instanceof Error ? error.message : "Unable to load timeline.");
@@ -112,23 +115,45 @@ function Detail() {
 
   const saveSurvey = async (caseStatus?: "Pending" | "Resolved") => {
     if (!row) return;
-    if (selectedReasons.length === 0) {
-      toast.error("Pending reason required", {
-        description: "Select at least one pending reason before saving.",
+
+    if (!registrationStatus) {
+      toast.error("Registration verification required", {
+        description: "Select whether the beneficiary is registered.",
       });
       return;
     }
+
+    if (registrationStatus === "No" && !reasonKnown) {
+      toast.error("Reason status required", {
+        description: "Select whether the reason is known.",
+      });
+      return;
+    }
+
+    if (registrationStatus === "No" && reasonKnown === "Yes" && (!registrationReason || !issue)) {
+      toast.error("Reason and issue required", {
+        description: "Select both fields before submitting the survey.",
+      });
+      return;
+    }
+
+    const nextSurveyStatus = getWorkflowStatus(registrationStatus, reasonKnown);
+    const reasons = registrationStatus === "No" && reasonKnown === "Yes" && issue ? [issueToPendingReason(issue)] : [];
 
     setIsSaving(true);
     try {
       await updateSurvey({
         id: row.id,
-        reason: selectedReasons[0],
-        reasons: selectedReasons,
+        reason: reasons[0],
+        reasons,
         remark,
-        officer,
         surveyDate,
         caseStatus,
+        surveyStatus: nextSurveyStatus,
+        registrationStatus,
+        reasonKnown: registrationStatus === "No" ? reasonKnown : undefined,
+        registrationReason: registrationStatus === "No" && reasonKnown === "Yes" ? registrationReason : "",
+        issue: registrationStatus === "No" && reasonKnown === "Yes" ? issue : "",
       });
       toast.success(caseStatus === "Resolved" ? "Case marked resolved" : "Survey saved", {
         description: `${row.name} · ${row.village}`,
@@ -160,11 +185,18 @@ function Detail() {
               : "Add VITE_GOOGLE_APPS_SCRIPT_URL in .env to load data from your Google Sheet.")
           }
         >
-          <p className="text-sm text-muted-foreground">No dummy beneficiary data is being shown.</p>
+          <p className="text-sm text-muted-foreground">No beneficiary record is available.</p>
         </Panel>
       </>
     );
   }
+
+  const workflowStatus = getWorkflowStatus(registrationStatus, reasonKnown);
+  const submitEnabled = canSubmit(registrationStatus, reasonKnown, registrationReason, issue);
+  const isExistingSurvey = row.surveyStatus !== "Pending" || timelineItems.length > 0;
+  const primaryActionText = isExistingSurvey && registrationStatus !== "Yes" ? "Save Changes" : "Submit Survey";
+  const registrationReasonOptions = uniqueOptions([...REGISTRATION_REASONS, registrationReason]);
+  const visibleTimelineItems = timelineItems.length > 0 ? timelineItems : buildFallbackTimeline(row);
 
   return (
     <>
@@ -176,22 +208,21 @@ function Detail() {
       <PageTitle title={row.name} subtitle={`${row.appId} · ${row.village}, GP ${row.gp}, Block ${row.block}`} />
 
       <div className="grid gap-3 xl:grid-cols-3">
-        <Panel title="Beneficiary Record" subtitle="Read only — sourced from scheme master">
+        <Panel title="Beneficiary Record" subtitle="Read only - sourced from scheme master">
           <dl className="grid grid-cols-2 gap-x-3 gap-y-2.5 text-xs">
             <Field label="Beneficiary ID" value={row.id} />
             <Field label="Application ID" value={row.appId} />
+            {row.project ? <Field label="Project" value={row.project} /> : null}
             <Field label="Mobile" value={row.mobile} />
             <Field label="Aadhaar" value={row.aadhaar} />
             <Field label="Village" value={row.village} />
             <Field label="Gram Panchayat" value={row.gp} />
             <Field label="Block" value={row.block} />
-            <Field label="District" value="Dantewada" />
             <Field label="Pending Reason" value={row.reason} />
             <Field label="Pending Since" value={`${row.pendingDays} days`} />
-            <Field label="Assigned Officer" value={row.officer} />
             <Field label="Priority" value={row.priority} />
           </dl>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             <Badge
               variant="outline"
               className={
@@ -202,14 +233,7 @@ function Detail() {
             >
               Case: {row.caseStatus}
             </Badge>
-            <Badge
-              variant="outline"
-              className={
-                row.surveyStatus === "Completed"
-                  ? "border-gov-green/40 bg-gov-green-soft text-gov-green"
-                  : "border-gov-amber/40 bg-gov-amber-soft text-gov-amber"
-              }
-            >
+            <Badge variant="outline" className={getSurveyBadgeClass(row.surveyStatus)}>
               Survey: {row.surveyStatus}
             </Badge>
           </div>
@@ -230,79 +254,101 @@ function Detail() {
                   void saveSurvey();
                 }}
               >
-                <fieldset className="sm:col-span-2 rounded-md border border-border p-3">
-                  <legend className="px-1 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Issue verification
-                  </legend>
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    {PENDING_REASONS.map((reason) => (
-                      <label key={reason} className="flex items-center gap-2 text-xs">
-                        <Checkbox
-                          checked={selectedReasons.includes(reason)}
-                          onCheckedChange={(checked) => toggleReason(reason, Boolean(checked))}
-                        />
-                        {reason}
+                <div className="grid gap-2 sm:col-span-2">
+                  <Label className="text-xs font-semibold">Is the beneficiary registered?</Label>
+                  <RadioGroup
+                    value={registrationStatus}
+                    onValueChange={(value) => {
+                      setRegistrationStatus(value as YesNo);
+                      setReasonKnown("");
+                      setRegistrationReason("");
+                      setIssue("");
+                    }}
+                    className="grid gap-2 sm:grid-cols-2"
+                  >
+                    {["Yes", "No"].map((value) => (
+                      <label key={value} className="flex h-10 items-center gap-2 rounded-md border border-border px-3 text-sm">
+                        <RadioGroupItem value={value} />
+                        {value}
                       </label>
                     ))}
+                  </RadioGroup>
+                </div>
+
+                {registrationStatus ? (
+                  <div className="grid gap-1.5 sm:col-span-2">
+                    <Label className="text-xs">Status</Label>
+                    <Input value={workflowStatus} readOnly className="h-9 bg-muted/40 font-medium" />
                   </div>
-                </fieldset>
+                ) : null}
 
-                <div className="grid gap-1.5">
-                  <Label className="text-xs">Pending reason (updated)</Label>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button type="button" variant="outline" className="h-auto min-h-9 justify-between px-3 text-left font-normal">
-                        <span className="line-clamp-2">
-                          {selectedReasons.length > 0 ? selectedReasons.join(", ") : "Select pending reasons"}
-                        </span>
-                        <ChevronDown className="ml-2 size-4 shrink-0 opacity-60" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-[var(--radix-dropdown-menu-trigger-width)]">
-                      {PENDING_REASONS.map((r) => (
-                        <DropdownMenuCheckboxItem
-                          key={r}
-                          checked={selectedReasons.includes(r)}
-                          onCheckedChange={(checked) => toggleReason(r, Boolean(checked))}
-                          onSelect={(e) => e.preventDefault()}
-                        >
-                          {r}
-                        </DropdownMenuCheckboxItem>
+                {registrationStatus === "No" ? (
+                  <div className="grid gap-2 sm:col-span-2">
+                    <Label className="text-xs font-semibold">Do you know the reason?</Label>
+                    <RadioGroup
+                      value={reasonKnown}
+                      onValueChange={(value) => {
+                        const next = value as YesNo;
+                        setReasonKnown(next);
+                        if (next === "No") {
+                          setRegistrationReason("");
+                          setIssue("");
+                        }
+                      }}
+                      className="grid gap-2 sm:grid-cols-2"
+                    >
+                      {["Yes", "No"].map((value) => (
+                        <label key={value} className="flex h-10 items-center gap-2 rounded-md border border-border px-3 text-sm">
+                          <RadioGroupItem value={value} />
+                          {value}
+                        </label>
                       ))}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-
-                <div className="grid gap-1.5">
-                  <Label className="text-xs">Survey officer</Label>
-                  <Select value={officer} onValueChange={setOfficer}>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder="Select officer" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {officers.map((o) => (
-                        <SelectItem key={o} value={o}>
-                          {o}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid gap-1.5">
-                  <Label className="text-xs">Survey date</Label>
-                  <Input type="date" value={surveyDate} onChange={(e) => setSurveyDate(e.target.value)} className="h-9" />
-                </div>
-
-                <div className="grid gap-1.5">
-                  <Label className="text-xs">GPS location (optional)</Label>
-                  <div className="flex gap-2">
-                    <Input placeholder="21.6597, 82.1600" className="h-9" />
-                    <Button type="button" variant="outline" size="icon" onClick={() => toast.info("Location captured")}>
-                      <MapPin className="size-4" />
-                    </Button>
+                    </RadioGroup>
                   </div>
-                </div>
+                ) : null}
+
+                {registrationStatus === "No" && reasonKnown === "Yes" ? (
+                  <>
+                    <div className="grid gap-1.5">
+                      <Label className="text-xs">Reason</Label>
+                      <Select value={registrationReason} onValueChange={setRegistrationReason}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Select reason" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {registrationReasonOptions.map((reason) => (
+                            <SelectItem key={reason} value={reason}>
+                              {reason}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="grid gap-1.5">
+                      <Label className="text-xs">Issue</Label>
+                      <Select value={issue} onValueChange={setIssue}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Select issue" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {REGISTRATION_ISSUES.map((item) => (
+                            <SelectItem key={item} value={item}>
+                              {item}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                ) : null}
+
+                {registrationStatus !== "Yes" ? (
+                  <div className="grid gap-1.5">
+                    <Label className="text-xs">Survey date</Label>
+                    <Input type="date" value={surveyDate} onChange={(e) => setSurveyDate(e.target.value)} className="h-9" />
+                  </div>
+                ) : null}
 
                 <div className="grid gap-1.5 sm:col-span-2">
                   <Label className="text-xs">Remarks</Label>
@@ -315,20 +361,14 @@ function Detail() {
                 </div>
 
                 <div className="flex gap-2 sm:col-span-2">
-                  <Button type="submit" disabled={isSaving}>
-                    <Save className="size-4" /> Submit survey
+                  <Button type="submit" disabled={isSaving || !submitEnabled}>
+                    <Save className="size-4" /> {primaryActionText}
                   </Button>
-                  <Button type="button" variant="outline" disabled={isSaving} onClick={() => void saveSurvey()}>
-                    Save draft
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    disabled={isSaving}
-                    onClick={() => void saveSurvey("Resolved")}
-                  >
-                    Mark resolved
-                  </Button>
+                  {registrationStatus !== "Yes" ? (
+                    <Button type="button" variant="secondary" disabled={isSaving || !submitEnabled} onClick={() => void saveSurvey("Resolved")}>
+                      Mark resolved
+                    </Button>
+                  ) : null}
                 </div>
               </form>
             </TabsContent>
@@ -338,17 +378,33 @@ function Detail() {
                 <p className="text-sm text-muted-foreground">Loading timeline...</p>
               ) : timelineError ? (
                 <p className="text-sm text-gov-red">{timelineError}</p>
-              ) : timelineItems.length === 0 ? (
+              ) : visibleTimelineItems.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No timeline activity recorded yet.</p>
               ) : (
                 <ol className="relative ml-1 space-y-4 border-l-2 border-gov-blue/30 py-1 pl-5">
-                  {timelineItems.map((item, index) => (
+                  {visibleTimelineItems.map((item, index) => (
                     <li key={`${item.time || item.date}-${item.text}-${index}`} className="relative">
                       <span className="absolute -left-[29px] top-1 size-3 rounded-full bg-gov-blue ring-4 ring-background" />
-                      <time className="num text-[11px] text-muted-foreground">{formatDisplayDate(item.date || item.time || "")}</time>
-                      <p className="mt-0.5 text-sm font-medium leading-snug text-foreground">{item.text}</p>
-                      {item.detail ? <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{item.detail}</p> : null}
-                      {item.officer ? <p className="mt-0.5 text-xs leading-snug text-muted-foreground">Officer: {item.officer}</p> : null}
+                      <div className="grid gap-1 rounded-md border border-border/70 bg-background p-3">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          {item.date || item.time ? (
+                            <time className="num text-[11px] font-medium text-muted-foreground">{formatDisplayDateTime(item.date, item.time)}</time>
+                          ) : null}
+                          {item.status ? (
+                            <Badge variant="outline" className={getSurveyBadgeClass(item.status)}>
+                              {item.status}
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <p className="text-sm font-semibold leading-snug text-foreground">{item.text}</p>
+                        {item.detail ? <p className="text-xs leading-snug text-muted-foreground">{item.detail}</p> : null}
+                        {item.date || item.time ? (
+                          <div className="grid gap-1 border-t border-border/60 pt-2 text-xs leading-snug text-muted-foreground sm:grid-cols-2">
+                            {item.date ? <span>Date: {formatTimelineDate(item.date, item.time)}</span> : null}
+                            {item.time ? <span>Time: {formatTimelineTime(item.time)}</span> : null}
+                          </div>
+                        ) : null}
+                      </div>
                     </li>
                   ))}
                 </ol>
@@ -361,13 +417,125 @@ function Detail() {
   );
 }
 
-function formatDisplayDate(date: string) {
-  if (!date) return "--";
+function getWorkflowStatus(registrationStatus: YesNo, reasonKnown: YesNo) {
+  if (registrationStatus === "Yes") return "In Progress";
+  if (registrationStatus === "No" && reasonKnown === "No") return "Reason Pending";
+  if (registrationStatus === "No" && reasonKnown === "Yes") return "Completed";
+  return "Pending";
+}
+
+function canSubmit(registrationStatus: YesNo, reasonKnown: YesNo, registrationReason: string, issue: string) {
+  if (registrationStatus === "Yes") return true;
+  if (registrationStatus === "No" && reasonKnown === "No") return true;
+  if (registrationStatus === "No" && reasonKnown === "Yes") return Boolean(registrationReason && issue);
+  return false;
+}
+
+function issueToPendingReason(issue: string) {
+  if (issue === "Document Missing" || issue === "Other") return "Other / Document";
+  return issue;
+}
+
+function uniqueOptions(values: readonly string[]) {
+  return values.filter((value, index) => value && values.indexOf(value) === index);
+}
+
+function hasTimelineContent(item: TimelineItem) {
+  return Boolean(
+    String(item.text || "").trim() ||
+      String(item.detail || "").trim() ||
+      String(item.status || "").trim() ||
+      String(item.date || "").trim() ||
+      String(item.time || "").trim(),
+  );
+}
+
+function buildFallbackTimeline(row: { surveyStatus: string; registrationStatus?: string; registrationReason?: string; issue?: string; remark?: string; lastSurvey?: string | null }) {
+  const items: TimelineItem[] = [];
+  const date = row.lastSurvey || "";
+
+  if (row.registrationStatus) {
+    items.push({
+      date,
+      text: `Registration Verified = ${row.registrationStatus}`,
+      status: row.surveyStatus,
+    });
+  }
+
+  if (row.registrationReason) {
+    items.push({
+      date,
+      text: "Reason Added",
+      detail: row.registrationReason,
+      status: row.surveyStatus,
+    });
+  }
+
+  if (row.issue) {
+    items.push({
+      date,
+      text: "Issue Added",
+      detail: row.issue,
+      status: row.surveyStatus,
+    });
+  }
+
+  if (row.surveyStatus !== "Pending") {
+    items.push({
+      date,
+      text: row.surveyStatus === "Completed" ? "Survey Completed" : `Status changed to ${row.surveyStatus}`,
+      detail: row.remark || "",
+      status: row.surveyStatus,
+    });
+  }
+
+  return items;
+}
+
+function getSurveyBadgeClass(status: string) {
+  if (status === "Completed" || status === "In Progress") return "border-gov-green/40 bg-gov-green-soft text-gov-green";
+  return "border-gov-amber/40 bg-gov-amber-soft text-gov-amber";
+}
+
+function formatDisplayDateTime(date: string, time?: string) {
+  if (!date && !time) return "";
+  const source = time || `${date}T00:00:00`;
+  const parsed = new Date(source.includes("T") ? source : source.replace(" ", "T"));
+  const fallbackDate = date ? new Date(`${date}T00:00:00`) : parsed;
+  const displayDate = new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(Number.isNaN(fallbackDate.getTime()) ? new Date() : fallbackDate);
+  const displayTime = Number.isNaN(parsed.getTime())
+    ? ""
+    : new Intl.DateTimeFormat("en-IN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(parsed);
+  return displayTime ? `${displayDate} • ${displayTime}` : displayDate;
+}
+
+function formatTimelineDate(date: string, time?: string) {
+  if (!date && !time) return "";
+  const source = date ? `${date}T00:00:00` : String(time).replace(" ", "T");
+  const parsed = new Date(source);
+  if (Number.isNaN(parsed.getTime())) return date || "";
   return new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  }).format(new Date(`${date}T00:00:00`));
+  }).format(parsed);
+}
+
+function formatTimelineTime(time?: string) {
+  if (!time) return "";
+  const parsed = new Date(time.includes("T") ? time : time.replace(" ", "T"));
+  if (Number.isNaN(parsed.getTime())) return "";
+  return new Intl.DateTimeFormat("en-IN", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(parsed);
 }
 
 function Field({ label, value }: { label: string; value: string }) {

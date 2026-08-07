@@ -1,8 +1,3 @@
-export const DISTRICT = "Dantewada";
-export const STATE = "Chhattisgarh";
-export const SCHEME = "Mahtari Vandan Yojana";
-export const AS_OF = "Live sheet data";
-
 export const PENDING_REASONS = [
   "MCP Card Missing",
   "Bank Account Issue",
@@ -12,13 +7,38 @@ export const PENDING_REASONS = [
 ] as const;
 export type PendingReason = (typeof PENDING_REASONS)[number];
 
-export type SurveyStatus = "Completed" | "Pending";
+export const REGISTRATION_REASONS = [
+  "Beneficiary not registered",
+  "Aadhaar unavailable",
+  "Bank account unavailable",
+  "Mobile number unavailable",
+  "Documents pending",
+  "Other",
+] as const;
+export type RegistrationReason = (typeof REGISTRATION_REASONS)[number];
+
+export const REGISTRATION_ISSUES = [
+  "Aadhaar Mismatch",
+  "Aadhaar-Bank Link",
+  "Bank Account Issue",
+  "MCP Card Missing",
+  "Document Missing",
+  "Other",
+] as const;
+export type RegistrationIssue = (typeof REGISTRATION_ISSUES)[number];
+
+export type SurveyStatus = "Completed" | "Pending" | "In Progress" | "Reason Pending";
 export type CaseStatus = "Pending" | "Resolved";
+
+const PROJECT_ALIASES: Record<string, string> = {
+  KATAKALYAN: "Katekalyan",
+};
 
 export interface Beneficiary {
   id: string;
   appId: string;
   serialNo?: string;
+  project?: string;
   name: string;
   age?: string;
   gender?: string;
@@ -29,10 +49,14 @@ export interface Beneficiary {
   gp: string;
   block: string;
   rawBlock?: string;
-  reason: PendingReason;
+  reason: string;
   reasons?: string[];
   caseStatus: CaseStatus;
   surveyStatus: SurveyStatus;
+  registrationStatus?: "Yes" | "No" | "";
+  reasonKnown?: "Yes" | "No" | "";
+  registrationReason?: string;
+  issue?: string;
   officer: string;
   pendingDays: number;
   lastSurvey: string | null;
@@ -42,6 +66,7 @@ export interface Beneficiary {
 }
 
 export interface Filters {
+  project?: string;
   block?: string;
   gp?: string;
   village?: string;
@@ -52,16 +77,11 @@ export interface Filters {
   q?: string;
 }
 
-export const beneficiaries: Beneficiary[] = [];
-export const blockList: string[] = [];
-export const gpList: { block: string; gp: string }[] = [];
-export const OFFICER_NAMES: string[] = [];
-export const activity: { time: string; type: string; text: string }[] = [];
-
 export function applyFilters(rows: Beneficiary[], f: Filters) {
   const q = f.q?.trim().toLowerCase();
   return rows.filter(
     (r) =>
+      (!f.project || r.project === f.project) &&
       (!f.block || r.block === f.block) &&
       (!f.gp || r.gp === f.gp) &&
       (!f.village || r.village === f.village) &&
@@ -73,10 +93,16 @@ export function applyFilters(rows: Beneficiary[], f: Filters) {
         r.name.toLowerCase().includes(q) ||
         r.appId.toLowerCase().includes(q) ||
         r.mobile.includes(q) ||
+        (r.project ?? "").toLowerCase().includes(q) ||
         r.village.toLowerCase().includes(q) ||
         r.gp.toLowerCase().includes(q) ||
         r.block.toLowerCase().includes(q)),
   );
+}
+
+export function normalizeProjectName(value?: string) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  return PROJECT_ALIASES[text.toUpperCase()] || text;
 }
 
 export function kpis(rows: Beneficiary[]) {
@@ -95,9 +121,6 @@ export function kpis(rows: Beneficiary[]) {
     surveyPending: total - surveyDone,
     surveyProgress: total ? Math.round((surveyDone / total) * 1000) / 10 : 0,
     pendingPct: total ? Math.round((pending.length / total) * 1000) / 10 : 0,
-    todaySurveys: 0,
-    todayResolved: 0,
-    avgResolutionDays: 0,
     over7,
     over30,
     high,
@@ -105,7 +128,9 @@ export function kpis(rows: Beneficiary[]) {
 }
 
 export interface BlockStat {
+  projectSummary: string;
   block: string;
+  blockLabel: string;
   total: number;
   pending: number;
   completed: number;
@@ -116,9 +141,54 @@ export interface BlockStat {
   aadhaar: number;
   link: number;
   other: number;
-  avgRes: number;
   officers: number;
   score: number;
+}
+
+export interface ProjectStat {
+  project: string;
+  total: number;
+  pending: number;
+  completed: number;
+  resolved: number;
+  surveyPct: number;
+  blocks: number;
+  gps: number;
+  villages: number;
+  mcp: number;
+  bank: number;
+  aadhaar: number;
+  link: number;
+  other: number;
+  score: number;
+}
+
+export function projectStats(rows: Beneficiary[]): ProjectStat[] {
+  const map = groupBy(rows.filter((r) => r.project), (r) => r.project || "");
+  return [...map.entries()]
+    .map(([project, rs]) => {
+      const pending = rs.filter((r) => r.caseStatus === "Pending").length;
+      const completed = rs.filter((r) => r.surveyStatus === "Completed").length;
+      const surveyPct = rs.length ? Math.round((completed / rs.length) * 1000) / 10 : 0;
+      return {
+        project,
+        total: rs.length,
+        pending,
+        completed,
+        resolved: rs.length - pending,
+        surveyPct,
+        blocks: new Set(rs.map((r) => r.block).filter(Boolean)).size,
+        gps: new Set(rs.map((r) => `${r.block}|${r.gp}`).filter(Boolean)).size,
+        villages: new Set(rs.map((r) => `${r.block}|${r.gp}|${r.village}`).filter(Boolean)).size,
+        mcp: reasonCount(rs, "MCP Card Missing"),
+        bank: reasonCount(rs, "Bank Account Issue"),
+        aadhaar: reasonCount(rs, "Aadhaar Mismatch"),
+        link: reasonCount(rs, "Aadhaar-Bank Link"),
+        other: reasonCount(rs, "Other / Document"),
+        score: Math.round(surveyPct * 0.7 + (rs.length ? ((rs.length - pending) / rs.length) * 100 * 0.3 : 0)),
+      };
+    })
+    .sort((a, b) => b.pending - a.pending);
 }
 
 export function blockStats(rows: Beneficiary[]): BlockStat[] {
@@ -129,7 +199,9 @@ export function blockStats(rows: Beneficiary[]): BlockStat[] {
       const completed = rs.filter((r) => r.surveyStatus === "Completed").length;
       const surveyPct = rs.length ? Math.round((completed / rs.length) * 1000) / 10 : 0;
       return {
+        projectSummary: "",
         block,
+        blockLabel: block,
         total: rs.length,
         pending,
         completed,
@@ -140,7 +212,6 @@ export function blockStats(rows: Beneficiary[]): BlockStat[] {
         aadhaar: reasonCount(rs, "Aadhaar Mismatch"),
         link: reasonCount(rs, "Aadhaar-Bank Link"),
         other: reasonCount(rs, "Other / Document"),
-        avgRes: 0,
         officers: new Set(rs.map((r) => r.officer).filter(Boolean)).size,
         score: Math.round(surveyPct * 0.7 + (rs.length ? ((rs.length - pending) / rs.length) * 100 * 0.3 : 0)),
       };
@@ -149,12 +220,13 @@ export function blockStats(rows: Beneficiary[]): BlockStat[] {
 }
 
 export function gpStats(rows: Beneficiary[]) {
-  return [...groupBy(rows, (r) => `${r.block}|${r.gp}`).entries()]
+  return [...groupBy(rows, (r) => `${r.project || ""}|${r.block}|${r.gp}`).entries()]
     .map(([key, rs]) => {
-      const [block = "", gp = ""] = key.split("|");
+      const [project = "", block = "", gp = ""] = key.split("|");
       const pending = rs.filter((r) => r.caseStatus === "Pending").length;
       const completed = rs.filter((r) => r.surveyStatus === "Completed").length;
       return {
+        project,
         block,
         gp,
         villages: new Set(rs.map((r) => r.village)).size,
@@ -175,13 +247,14 @@ export function gpStats(rows: Beneficiary[]) {
 }
 
 export function villageStats(rows: Beneficiary[]) {
-  return [...groupBy(rows, (r) => `${r.block}|${r.gp}|${r.village}`).entries()]
+  return [...groupBy(rows, (r) => `${r.project || ""}|${r.block}|${r.gp}|${r.village}`).entries()]
     .map(([key, rs]) => {
-      const [block = "", gp = "", village = ""] = key.split("|");
+      const [project = "", block = "", gp = "", village = ""] = key.split("|");
       const pending = rs.filter((r) => r.caseStatus === "Pending").length;
       const completed = rs.filter((r) => r.surveyStatus === "Completed").length;
       const last = rs.map((r) => r.lastSurvey).filter(Boolean).sort().at(-1) ?? null;
       return {
+        project,
         block,
         gp,
         village,
@@ -198,7 +271,7 @@ export function villageStats(rows: Beneficiary[]) {
 }
 
 export function officerStats(rows: Beneficiary[]) {
-  return [...groupBy(rows, (r) => r.officer || "Unassigned").entries()]
+  return [...groupBy(rows, (r) => r.officer).entries()]
     .map(([officer, rs], i) => {
       const completed = rs.filter((r) => r.surveyStatus === "Completed").length;
       const pct = rs.length ? Math.round((completed / rs.length) * 1000) / 10 : 0;
@@ -237,8 +310,6 @@ export function ageBuckets(rows: Beneficiary[]) {
     { bucket: "30+ days", count: p.filter((r) => r.pendingDays >= 30).length },
   ];
 }
-
-export const trend: { date: string; surveys: number; resolved: number }[] = [];
 
 export function alerts(rows: Beneficiary[]) {
   const bs = blockStats(rows);

@@ -1,12 +1,10 @@
 import { RefreshCw, Search, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AS_OF, DISTRICT, SCHEME, STATE } from "@/data/district";
 import { useFilters } from "./filters-context";
-import { toast } from "sonner";
 
 export function TopBar() {
-  const { filters, setFilter } = useFilters();
+  const { filters, setFilter, rows, isLoading } = useFilters();
 
   return (
     <header className="sticky top-0 z-30">
@@ -16,7 +14,7 @@ export function TopBar() {
             MVY Survey Monitoring
           </h1>
           <p className="truncate text-[11px] text-primary-foreground/70">
-            {SCHEME} - {DISTRICT}, {STATE}
+            {isLoading ? "Loading sheet data..." : `${rows.length.toLocaleString("en-IN")} records in current selection`}
           </p>
         </div>
 
@@ -34,7 +32,7 @@ export function TopBar() {
             variant="ghost"
             size="icon"
             className="text-primary-foreground hover:bg-primary-foreground/10"
-            onClick={() => toast.success("Dashboard refreshed", { description: `Data as of ${AS_OF}` })}
+            onClick={() => window.location.reload()}
             aria-label="Refresh dashboard"
           >
             <RefreshCw className="size-4" />
@@ -43,7 +41,7 @@ export function TopBar() {
             variant="secondary"
             size="sm"
             className="hidden sm:inline-flex"
-            onClick={() => toast.success("Export queued", { description: "Dashboard PDF will download shortly." })}
+            onClick={() => window.print()}
           >
             <Download className="size-4" /> Export
           </Button>

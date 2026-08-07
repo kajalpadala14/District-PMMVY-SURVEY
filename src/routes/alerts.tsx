@@ -5,8 +5,6 @@ import { useFilters } from "@/components/dash/filters-context";
 import { Panel, PageTitle } from "@/components/dash/panel";
 import { alerts } from "@/data/district";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/alerts")({
@@ -63,9 +61,6 @@ function Alerts() {
                 <Badge variant="outline" className="uppercase">
                   {a.level}
                 </Badge>
-                <Button size="sm" variant="outline" onClick={() => toast.success("Escalated to Block Officer")}>
-                  Escalate
-                </Button>
               </li>
             ))}
         </ul>

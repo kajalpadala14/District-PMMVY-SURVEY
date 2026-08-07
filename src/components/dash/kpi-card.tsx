@@ -26,7 +26,7 @@ export interface KpiCardProps {
 
 export function KpiCard({ label, value, suffix, icon: Icon, tone = "blue", delta, hint, spark }: KpiCardProps) {
   const t = toneMap[tone];
-  const DeltaIcon = delta === undefined || delta === 0 ? Minus : delta > 0 ? ArrowUpRight : ArrowDownRight;
+  const DeltaIcon = delta === 0 ? Minus : delta && delta > 0 ? ArrowUpRight : ArrowDownRight;
   const data = (spark ?? []).map((v, i) => ({ i, v }));
 
   return (
@@ -43,22 +43,24 @@ export function KpiCard({ label, value, suffix, icon: Icon, tone = "blue", delta
         {suffix ? <span className="pb-0.5 text-xs font-medium text-muted-foreground">{suffix}</span> : null}
       </div>
 
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <span
-          className={cn(
-            "flex items-center gap-0.5 text-[11px] font-semibold",
-            delta === undefined || delta === 0
-              ? "text-muted-foreground"
-              : delta > 0
-                ? "text-gov-green"
-                : "text-gov-red",
+      {delta !== undefined || hint ? (
+        <div className="mt-2 flex items-center justify-between gap-2">
+          {delta !== undefined ? (
+            <span
+              className={cn(
+                "flex items-center gap-0.5 text-[11px] font-semibold",
+                delta === 0 ? "text-muted-foreground" : delta > 0 ? "text-gov-green" : "text-gov-red",
+              )}
+            >
+              <DeltaIcon className="size-3" />
+              {`${Math.abs(delta)}%`}
+            </span>
+          ) : (
+            <span />
           )}
-        >
-          <DeltaIcon className="size-3" />
-          {delta === undefined ? "--" : `${Math.abs(delta)}%`}
-        </span>
-        {hint ? <span className="truncate text-[11px] text-muted-foreground">{hint}</span> : null}
-      </div>
+          {hint ? <span className="truncate text-[11px] text-muted-foreground">{hint}</span> : null}
+        </div>
+      ) : null}
 
       {data.length > 1 ? (
         <div className="mt-2 h-8 opacity-80">

@@ -33,13 +33,13 @@ function Blocks() {
 
       <div className="grid gap-3 xl:grid-cols-3">
         <Panel title="Pending by Block" subtitle="Highest first">
-          <HBar data={bs} nameKey="block" valueKey="pending" tone="var(--gov-red)" />
+          <HBar data={bs} nameKey="blockLabel" valueKey="pending" tone="var(--gov-red)" />
         </Panel>
         <Panel title="Survey % by Block" subtitle="District target 75%">
-          <HBar data={bs} nameKey="block" valueKey="surveyPct" tone="var(--gov-green)" />
+          <HBar data={bs} nameKey="blockLabel" valueKey="surveyPct" tone="var(--gov-green)" />
         </Panel>
         <Panel title="Performance Score" subtitle="Survey weightage 70% · resolution 30%">
-          <HBar data={[...bs].sort((a, b) => a.score - b.score)} nameKey="block" valueKey="score" />
+          <HBar data={[...bs].sort((a, b) => a.score - b.score)} nameKey="blockLabel" valueKey="score" />
         </Panel>
       </div>
 
@@ -59,7 +59,6 @@ function Blocks() {
                 <th className="px-2 py-2">Aadhaar</th>
                 <th className="px-2 py-2">Adr-Bank</th>
                 <th className="px-2 py-2">Other</th>
-                <th className="px-2 py-2">Avg Res.</th>
                 <th className="px-2 py-2">Score</th>
                 <th className="px-2 py-2">Status</th>
                 <th className="px-2 py-2" />
@@ -81,7 +80,6 @@ function Blocks() {
                   <td className="num px-2 py-2">{b.aadhaar}</td>
                   <td className="num px-2 py-2">{b.link}</td>
                   <td className="num px-2 py-2">{b.other}</td>
-                  <td className="num px-2 py-2">{b.avgRes}d</td>
                   <td className="num px-2 py-2 font-semibold">{b.score}</td>
                   <td className="px-2 py-2">
                     <StatusPill value={b.surveyPct} />
