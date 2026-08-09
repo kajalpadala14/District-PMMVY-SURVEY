@@ -1,3 +1,5 @@
+import { DANTEWADA_GRAM_PANCHAYATS } from "./dantewada-gps";
+
 export const PENDING_REASONS = [
   "MCP Card Missing",
   "Bank Account Issue",
@@ -32,6 +34,29 @@ export type CaseStatus = "Pending" | "Resolved";
 
 const PROJECT_ALIASES: Record<string, string> = {
   KATAKALYAN: "Katekalyan",
+};
+
+const GP_ALIASES: Record<string, string> = {
+  "BADE BACHELI": "BADEBACHELI",
+  "BADE HADHMAMUNDA": "BADE HADMA MUNDA",
+  BADELEKHAPAL: "BADELAKHAPAL",
+  BENGALUR: "BENGLUR",
+  BODALI: "BODLI",
+  "CHHOTE BEDMA": "CHHOTEBEDMA",
+  CHITALANK: "CHITALANKA",
+  CHOTETUMNAR: "CHHOTETUMNAR",
+  DUDHIRAS: "DHUDHIRAS",
+  FARASPAL: "PHARASPAL",
+  FULNAR: "PHULNAR",
+  "KARLI 2": "KARLI 02",
+  KESHPUR: "KESHAPUR",
+  KUAKONDA: "KUWAKONDA",
+  MADKAMIRAS: "MADHKAMIRAS",
+  MAHRAHAUNRAAR: "MAHARAHAURNAR",
+  MOFALNAR: "MOPHALNAR",
+  POTLI: "POTALI",
+  TOYLANKA: "TOYALANKA",
+  TUMIRGUNDA: "TUMRIGUNDA",
 };
 
 export interface Beneficiary {
@@ -222,9 +247,22 @@ export function blockStats(rows: Beneficiary[]): BlockStat[] {
 }
 
 export function gpStats(rows: Beneficiary[]) {
-  return [...groupBy(rows, (r) => `${r.project || ""}|${r.block}|${r.gp}`).entries()]
+  const activeBlocks = new Set(rows.map((r) => r.block).filter(Boolean));
+  const blocksForMaster = activeBlocks.size ? activeBlocks : new Set(DANTEWADA_GRAM_PANCHAYATS.map((gp) => gp.block));
+  const masterKeys = new Set(
+    DANTEWADA_GRAM_PANCHAYATS.filter((gp) => blocksForMaster.has(gp.block)).map((gp) => `${gp.block}|${normalizeGpKey(gp.gp)}`),
+  );
+  const rowGroups = [...groupBy(rows, (r) => `${r.block}|${normalizeGpKey(r.gp)}`).entries()];
+  const rowKeys = new Set(rowGroups.map(([key]) => key));
+  const missingMasterGroups = DANTEWADA_GRAM_PANCHAYATS.filter((gp) => masterKeys.has(`${gp.block}|${normalizeGpKey(gp.gp)}`) && !rowKeys.has(`${gp.block}|${normalizeGpKey(gp.gp)}`))
+    .map((gp) => [`${gp.block}|${normalizeGpKey(gp.gp)}`, []] as [string, Beneficiary[]]);
+
+  return [...rowGroups, ...missingMasterGroups]
     .map(([key, rs]) => {
-      const [project = "", block = "", gp = ""] = key.split("|");
+      const [block = "", gpKey = ""] = key.split("|");
+      const master = DANTEWADA_GRAM_PANCHAYATS.find((item) => item.block === block && normalizeGpKey(item.gp) === gpKey);
+      const project = rs.find((r) => r.project)?.project ?? "";
+      const gp = rs.find((r) => r.gp)?.gp ?? master?.gp ?? gpKey;
       const pending = rs.filter((r) => r.caseStatus === "Pending").length;
       const completed = rs.filter((r) => r.surveyStatus === "Completed").length;
       return {
@@ -245,7 +283,7 @@ export function gpStats(rows: Beneficiary[]) {
         high: rs.filter((r) => r.priority === "High" && r.caseStatus === "Pending").length,
       };
     })
-    .sort((a, b) => b.pending - a.pending);
+    .sort((a, b) => b.pending - a.pending || a.block.localeCompare(b.block) || a.gp.localeCompare(b.gp));
 }
 
 export function villageStats(rows: Beneficiary[]) {
@@ -348,4 +386,13 @@ function groupBy<T>(rows: T[], getKey: (row: T) => string) {
     map.set(key, [...(map.get(key) ?? []), row]);
   });
   return map;
+}
+
+function normalizeGpKey(value: string) {
+  const key = String(value || "")
+    .replace(/\s*\([^)]*\)\s*/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+  return GP_ALIASES[key] || key;
 }

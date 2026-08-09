@@ -9,9 +9,10 @@ import {
   Layers3,
   Landmark,
   Printer,
+  RotateCcw,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { useFilters } from "@/components/dash/filters-context";
 import { FilterPanel } from "@/components/dash/filter-panel";
@@ -19,19 +20,23 @@ import { KpiCard } from "@/components/dash/kpi-card";
 import { Bar, Panel, StatusPill } from "@/components/dash/panel";
 import { HBar, ProgressDonut, ReasonPie, VBar } from "@/components/dash/charts";
 import { blockStats, gpStats, kpis, projectStats, reasonStats } from "@/data/district";
+import { REGISTRATION_ISSUES } from "@/data/district";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { downloadExcelReport } from "@/lib/export-excel";
+import { beneficiaryHasIssue, ISSUE_DETAIL_HEADERS, ISSUE_REPORT_OPTIONS, issueDetailRows } from "@/lib/issue-report";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Single Page Command Centre | MVY District Dashboard" },
+      { title: "MVY - SURVEY Portal" },
       {
         name: "description",
         content:
-          "Single-page MVY district command centre for KPIs, blocks, Gram Panchayats, villages, beneficiaries, alerts and reports.",
+          "MVY survey portal for KPIs, Gram Panchayats, villages, beneficiaries, alerts and reports.",
       },
     ],
   }),
@@ -44,28 +49,104 @@ const dashboardSections = [
   ["blocks", "Blocks"],
   ["gps", "Gram Panchayats"],
 ] as const;
+const ALL = "__all__";
+const GP_QUEUE_PAGE_SIZE = 10;
 
 function SinglePageDashboard() {
-  const { rows, setFilter, activeCount, isLoading, error, isSheetConfigured } = useFilters();
+  const { rows, setFilter, reset, activeCount, isLoading, error, isSheetConfigured } = useFilters();
   const [tab, setTab] = useState("dashboard");
+  const [gpQueuePage, setGpQueuePage] = useState(0);
+  const [customBlock, setCustomBlock] = useState("");
+  const [customGp, setCustomGp] = useState("");
+  const [customVillage, setCustomVillage] = useState("");
+  const [customIssue, setCustomIssue] = useState("");
   const k = kpis(rows);
   const ps = projectStats(rows);
   const bs = blockStats(rows);
   const gs = gpStats(rows);
   const hasProjectData = ps.length > 0;
+  const gpQueuePages = Math.max(1, Math.ceil(gs.length / GP_QUEUE_PAGE_SIZE));
+  const gpQueuePageIndex = Math.min(gpQueuePage, gpQueuePages - 1);
+  const gpQueueRows = gs.slice(gpQueuePageIndex * GP_QUEUE_PAGE_SIZE, gpQueuePageIndex * GP_QUEUE_PAGE_SIZE + GP_QUEUE_PAGE_SIZE);
+  const customOptions = useMemo(() => {
+    const blockRows = rows.filter((row) => !customBlock || row.block === customBlock);
+    const gpRows = blockRows.filter((row) => !customGp || row.gp === customGp);
+    return {
+      blocks: unique(rows.map((row) => row.block)),
+      gps: unique(blockRows.map((row) => row.gp)),
+      villages: unique(gpRows.map((row) => row.village)),
+    };
+  }, [customBlock, customGp, rows]);
+  const customRows = useMemo(
+    () =>
+      rows.filter(
+        (row) =>
+          (!customBlock || row.block === customBlock) &&
+          (!customGp || row.gp === customGp) &&
+          (!customVillage || row.village === customVillage) &&
+          (!customIssue || beneficiaryHasIssue(row, customIssue)),
+      ),
+    [customBlock, customGp, customIssue, customVillage, rows],
+  );
+  const downloadProjectReport = () => {
+    downloadExcelReport(
+      "mvy-project-wise-report.xls",
+      "Project Wise Report",
+      ["Project", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Score"],
+      ps.map((p) => [p.project, p.total, p.pending, p.completed, p.resolved, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other, p.score]),
+    );
+  };
+  const downloadBlockReport = () => {
+    downloadExcelReport(
+      "mvy-block-wise-report.xls",
+      "Block Wise Report",
+      ["Block", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers", "Score"],
+      bs.map((b) => [b.block, b.total, b.pending, b.completed, b.resolved, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers, b.score]),
+    );
+  };
+  const downloadGpReport = () => {
+    downloadExcelReport(
+      "mvy-gp-wise-report.xls",
+      "GP Wise Report",
+      ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"],
+      gs.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]),
+    );
+  };
+  const downloadIssueDetailReport = (issue: string) => {
+    downloadExcelReport(
+      `mvy-${slugify(issue)}-issue-detail-report.xls`,
+      `${issue} Issue Detail Report`,
+      ISSUE_DETAIL_HEADERS,
+      issueDetailRows(rows, issue),
+    );
+  };
+  const downloadCustomReport = () => {
+    const suffix = [customBlock, customGp, customVillage, customIssue].filter(Boolean).map(slugify).join("-");
+    downloadExcelReport(
+      `mvy-custom-filtered-report${suffix ? `-${suffix}` : ""}.xls`,
+      "Custom Filtered Report",
+      ISSUE_DETAIL_HEADERS,
+      issueDetailRows(customRows, customIssue || undefined),
+    );
+  };
 
   return (
     <Tabs value={tab} onValueChange={setTab} className="space-y-4">
       <section className="rounded-lg border border-border bg-surface px-4 py-4 shadow-[var(--shadow-card)]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gov-blue">District command centre</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gov-blue">MVY - SURVEY Portal</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge variant="secondary" className="num">
               {rows.length.toLocaleString("en-IN")} records
             </Badge>
             <Badge variant="outline">{activeCount} filters active</Badge>
+            {activeCount > 0 ? (
+              <Button size="sm" variant="outline" onClick={reset}>
+                <RotateCcw className="size-3.5" /> Back
+              </Button>
+            ) : null}
             {!isSheetConfigured ? <Badge variant="outline">Sheet URL not configured</Badge> : null}
           </div>
         </div>
@@ -187,13 +268,22 @@ function SinglePageDashboard() {
         <Panel title="Top GPs by Pending" subtitle="Immediate intervention list">
           <VBar data={gs.slice(0, 10)} nameKey="gp" valueKey="pending" height={280} />
         </Panel>
-        <Panel title="Gram Panchayat Queue" subtitle={`${gs.length} Gram Panchayats in current selection`}>
+        <Panel
+          title="Gram Panchayat Queue"
+          subtitle={`${gs.length} Gram Panchayats in current selection`}
+          action={
+            activeCount > 0 ? (
+              <Button size="sm" variant="outline" onClick={reset}>
+                <RotateCcw className="size-3.5" /> Clear Focus
+              </Button>
+            ) : null
+          }
+        >
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1120px] text-xs">
               <thead>
                 <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                   <th className="px-2 py-2">Gram Panchayat</th>
-                  <th className="px-2 py-2">Block</th>
                   <th className="px-2 py-2">Villages</th>
                   <th className="px-2 py-2">Pending</th>
                   <th className="px-2 py-2">Completed</th>
@@ -208,10 +298,9 @@ function SinglePageDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {gs.slice(0, 12).map((g) => (
+                {gpQueueRows.map((g) => (
                   <tr key={`${g.block}-${g.gp}`} className="border-b border-border/70 hover:bg-secondary/60">
                     <td className="px-2 py-2 font-semibold">{g.gp}</td>
-                    <td className="px-2 py-2">{g.block}</td>
                     <td className="num px-2 py-2">{g.villages}</td>
                     <td className="num px-2 py-2 font-semibold text-gov-red">{g.pending}</td>
                     <td className="num px-2 py-2">{g.completed}</td>
@@ -232,6 +321,19 @@ function SinglePageDashboard() {
               </tbody>
             </table>
           </div>
+          <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+            <span>
+              Showing {gpQueuePageIndex * GP_QUEUE_PAGE_SIZE + 1}-{Math.min((gpQueuePageIndex + 1) * GP_QUEUE_PAGE_SIZE, gs.length)} of {gs.length}
+            </span>
+            <div className="flex gap-2">
+              <Button size="sm" variant="outline" disabled={gpQueuePageIndex === 0} onClick={() => setGpQueuePage(Math.max(0, gpQueuePageIndex - 1))}>
+                Previous
+              </Button>
+              <Button size="sm" variant="outline" disabled={gpQueuePageIndex >= gpQueuePages - 1} onClick={() => setGpQueuePage(Math.min(gpQueuePages - 1, gpQueuePageIndex + 1))}>
+                Next
+              </Button>
+            </div>
+          </div>
         </Panel>
       </section>
 
@@ -246,11 +348,9 @@ function SinglePageDashboard() {
               <thead>
                 <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                   <th className="px-2 py-2">Application ID</th>
-                  <th className="px-2 py-2">Project</th>
                   <th className="px-2 py-2">Name</th>
                   <th className="px-2 py-2">Village</th>
                   <th className="px-2 py-2">GP</th>
-                  <th className="px-2 py-2">Block</th>
                   <th className="px-2 py-2">Reason</th>
                   <th className="px-2 py-2">Survey</th>
                   <th className="px-2 py-2">Status</th>
@@ -262,11 +362,9 @@ function SinglePageDashboard() {
                 {rows.map((b) => (
                   <tr key={b.id} className="border-b border-border/70 hover:bg-secondary/60">
                     <td className="num px-2 py-2">{b.appId}</td>
-                    <td className="px-2 py-2">{b.project}</td>
                     <td className="px-2 py-2 font-semibold">{b.name}</td>
                     <td className="px-2 py-2">{b.village}</td>
                     <td className="px-2 py-2">{b.gp}</td>
-                    <td className="px-2 py-2">{b.block}</td>
                     <td className="px-2 py-2">{b.reason}</td>
                     <td className="px-2 py-2"><StatusBadge value={b.surveyStatus} good="Completed" /></td>
                     <td className="px-2 py-2"><StatusBadge value={b.caseStatus} good="Resolved" /></td>
@@ -293,13 +391,100 @@ function SinglePageDashboard() {
       <section id="reports" className="scroll-mt-32">
         <Panel title="Report Actions" subtitle="Filter-aware exports" action={<Download className="size-4 text-muted-foreground" />}>
           <div className="grid gap-2">
-            {["District Summary", "Project Wise Report", "Block Wise Report", "GP Report", "Village Report", "Pending Beneficiaries"].map((name) => (
-              <div key={name} className="flex items-center gap-2 rounded-md border border-border p-3">
-                <FileSpreadsheet className="size-4 text-gov-green" />
-                <span className="min-w-0 flex-1 text-sm font-semibold">{name}</span>
-                <Button size="sm" variant="outline" onClick={() => window.print()}>
-                  Print
+            <div className="grid gap-3 rounded-md border border-border bg-secondary/30 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Custom Filtered Report</p>
+                  <p className="text-[11px] text-muted-foreground">Block, GP, village aur issue select karke exact report download karein.</p>
+                </div>
+                <Badge variant="secondary" className="num">
+                  {customRows.length.toLocaleString("en-IN")} matched
+                </Badge>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                <ReportPicker
+                  label="Block"
+                  value={customBlock}
+                  options={customOptions.blocks}
+                  onChange={(value) => {
+                    setCustomBlock(value);
+                    setCustomGp("");
+                    setCustomVillage("");
+                  }}
+                />
+                <ReportPicker
+                  label="Gram Panchayat"
+                  value={customGp}
+                  options={customOptions.gps}
+                  onChange={(value) => {
+                    setCustomGp(value);
+                    setCustomVillage("");
+                  }}
+                />
+                <ReportPicker label="Village" value={customVillage} options={customOptions.villages} onChange={setCustomVillage} />
+                <ReportPicker label="Issue" value={customIssue} options={[...REGISTRATION_ISSUES]} onChange={setCustomIssue} />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={downloadCustomReport}>
+                  <Download className="size-3.5" /> Download Excel
                 </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setCustomBlock("");
+                    setCustomGp("");
+                    setCustomVillage("");
+                    setCustomIssue("");
+                  }}
+                >
+                  Reset
+                </Button>
+              </div>
+            </div>
+            {["Project Wise Report", "Block Wise Report", "GP Report", "Issue Detail Report"].map((name) => (
+              <div key={name} className="rounded-md border border-border p-3">
+                {name === "Issue Detail Report" ? (
+                  <div className="grid gap-3">
+                    <div className="flex items-center gap-2">
+                      <FileSpreadsheet className="size-4 text-gov-green" />
+                      <span className="min-w-0 flex-1 text-sm font-semibold">{name}</span>
+                      <Button size="sm" variant="outline" onClick={() => window.print()}>
+                        Print
+                      </Button>
+                    </div>
+                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      {ISSUE_REPORT_OPTIONS.map((issue) => (
+                        <Button key={issue} size="sm" variant="outline" className="justify-start" onClick={() => downloadIssueDetailReport(issue)}>
+                          {issue}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <FileSpreadsheet className="size-4 text-gov-green" />
+                    <span className="min-w-0 flex-1 text-sm font-semibold">{name}</span>
+                    {name === "Project Wise Report" ? (
+                      <Button size="sm" variant="outline" onClick={downloadProjectReport}>
+                        Excel
+                      </Button>
+                    ) : null}
+                    {name === "Block Wise Report" ? (
+                      <Button size="sm" variant="outline" onClick={downloadBlockReport}>
+                        Excel
+                      </Button>
+                    ) : null}
+                    {name === "GP Report" ? (
+                      <Button size="sm" variant="outline" onClick={downloadGpReport}>
+                        Excel
+                      </Button>
+                    ) : null}
+                    <Button size="sm" variant="outline" onClick={() => window.print()}>
+                      Print
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
             <Button className="mt-2" onClick={() => window.print()}>
@@ -310,6 +495,35 @@ function SinglePageDashboard() {
       </section>
       </TabsContent>
     </Tabs>
+  );
+}
+
+function slugify(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function unique(values: string[]) {
+  return [...new Set(values.filter(Boolean))].sort((a, b) => a.localeCompare(b));
+}
+
+function ReportPicker({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {
+  return (
+    <label>
+      <span className="mb-1 block text-[11px] font-medium text-muted-foreground">{label}</span>
+      <Select value={value || ALL} onValueChange={(next) => onChange(next === ALL ? "" : next)}>
+        <SelectTrigger className="h-9 bg-background text-xs shadow-none">
+          <SelectValue placeholder={label} />
+        </SelectTrigger>
+        <SelectContent className="max-h-72">
+          <SelectItem value={ALL}>All {label}</SelectItem>
+          {options.map((option) => (
+            <SelectItem key={option} value={option}>
+              {option}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </label>
   );
 }
 

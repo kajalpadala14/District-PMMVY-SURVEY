@@ -1,18 +1,20 @@
 import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Check, ChevronsUpDown, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useFilters } from "@/components/dash/filters-context";
 import { Panel, PageTitle } from "@/components/dash/panel";
 import { REGISTRATION_ISSUES } from "@/data/district";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 interface TimelineItem {
   date: string;
@@ -53,7 +55,7 @@ function Detail() {
   const row = allRows.find((item) => item.id === id);
   const [registrationStatus, setRegistrationStatus] = useState<YesNo>("");
   const [reasonKnown, setReasonKnown] = useState<YesNo>("");
-  const [issue, setIssue] = useState("");
+  const [issues, setIssues] = useState<string[]>([]);
   const [surveyDate, setSurveyDate] = useState(new Date().toISOString().slice(0, 10));
   const [remark, setRemark] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -69,7 +71,7 @@ function Detail() {
 
     setRegistrationStatus(inferredRegistrationStatus);
     setReasonKnown(savedReasonKnown || (inferredRegistrationStatus === "No" && row?.issue ? "Yes" : ""));
-    setIssue(row?.issue ?? "");
+    setIssues(parseSavedIssues(row?.issue));
     setSurveyDate(row?.lastSurvey ?? new Date().toISOString().slice(0, 10));
     setRemark(row?.remark ?? "");
   }, [row]);
@@ -128,15 +130,16 @@ function Detail() {
       return;
     }
 
-    if (registrationStatus === "No" && reasonKnown === "Yes" && !issue) {
+    if (registrationStatus === "No" && reasonKnown === "Yes" && issues.length === 0) {
       toast.error("Issue required", {
-        description: "Select the issue before submitting the survey.",
+        description: "Select at least one issue before submitting the survey.",
       });
       return;
     }
 
     const nextSurveyStatus = getWorkflowStatus(registrationStatus, reasonKnown);
-    const reasons = registrationStatus === "No" && reasonKnown === "Yes" && issue ? [issueToPendingReason(issue)] : [];
+    const selectedIssues = registrationStatus === "No" && reasonKnown === "Yes" ? issues : [];
+    const reasons = selectedIssues.map(issueToPendingReason);
 
     setIsSaving(true);
     try {
@@ -151,7 +154,7 @@ function Detail() {
         registrationStatus,
         reasonKnown: registrationStatus === "No" ? reasonKnown : undefined,
         registrationReason: "",
-        issue: registrationStatus === "No" && reasonKnown === "Yes" ? issue : "",
+        issue: selectedIssues,
       });
       toast.success(caseStatus === "Resolved" ? "Case marked resolved" : "Survey saved", {
         description: `${row.name} · ${row.village}`,
@@ -190,7 +193,7 @@ function Detail() {
   }
 
   const workflowStatus = getWorkflowStatus(registrationStatus, reasonKnown);
-  const submitEnabled = canSubmit(registrationStatus, reasonKnown, issue);
+  const submitEnabled = canSubmit(registrationStatus, reasonKnown, issues);
   const isExistingSurvey = row.surveyStatus !== "Pending" || timelineItems.length > 0;
   const primaryActionText = isExistingSurvey && registrationStatus !== "Yes" ? "Save Changes" : "Submit Survey";
   const visibleTimelineItems = timelineItems.length > 0 ? timelineItems : buildFallbackTimeline(row);
@@ -258,7 +261,7 @@ function Detail() {
                     onValueChange={(value) => {
                       setRegistrationStatus(value as YesNo);
                       setReasonKnown("");
-                      setIssue("");
+                      setIssues([]);
                     }}
                     className="grid gap-2 sm:grid-cols-2"
                   >
@@ -287,7 +290,7 @@ function Detail() {
                         const next = value as YesNo;
                         setReasonKnown(next);
                         if (next === "No") {
-                          setIssue("");
+                          setIssues([]);
                         }
                       }}
                       className="grid gap-2 sm:grid-cols-2"
@@ -305,18 +308,7 @@ function Detail() {
                 {registrationStatus === "No" && reasonKnown === "Yes" ? (
                   <div className="grid gap-1.5">
                     <Label className="text-xs">Issue</Label>
-                    <Select value={issue} onValueChange={setIssue}>
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Select issue" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {REGISTRATION_ISSUES.map((item) => (
-                          <SelectItem key={item} value={item}>
-                            {item}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <IssueMultiSelect value={issues} onChange={setIssues} />
                   </div>
                 ) : null}
 
@@ -401,11 +393,64 @@ function getWorkflowStatus(registrationStatus: YesNo, reasonKnown: YesNo) {
   return "Pending";
 }
 
-function canSubmit(registrationStatus: YesNo, reasonKnown: YesNo, issue: string) {
+function canSubmit(registrationStatus: YesNo, reasonKnown: YesNo, issues: string[]) {
   if (registrationStatus === "Yes") return true;
   if (registrationStatus === "No" && reasonKnown === "No") return true;
-  if (registrationStatus === "No" && reasonKnown === "Yes") return Boolean(issue);
+  if (registrationStatus === "No" && reasonKnown === "Yes") return issues.length > 0;
   return false;
+}
+
+function IssueMultiSelect({ value, onChange }: { value: string[]; onChange: (value: string[]) => void }) {
+  const selectedText = value.length ? value.join(", ") : "Select issue";
+
+  const toggleIssue = (issue: string) => {
+    onChange(value.includes(issue) ? value.filter((item) => item !== issue) : [...value, issue]);
+  };
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" type="button" className="h-9 w-full justify-between overflow-hidden px-3 font-normal">
+          <span className={cn("truncate", !value.length && "text-muted-foreground")}>{selectedText}</span>
+          <ChevronsUpDown className="ml-2 size-4 shrink-0 opacity-60" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-[--radix-popover-trigger-width] p-1">
+        <div className="grid max-h-64 gap-1 overflow-y-auto">
+          {REGISTRATION_ISSUES.map((issue) => {
+            const checked = value.includes(issue);
+            return (
+              <div
+                key={issue}
+                role="button"
+                tabIndex={0}
+                className="flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-sm px-2 text-left text-sm hover:bg-accent"
+                onClick={() => toggleIssue(issue)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    toggleIssue(issue);
+                  }
+                }}
+              >
+                <Checkbox checked={checked} onCheckedChange={() => toggleIssue(issue)} onClick={(event) => event.stopPropagation()} />
+                <span className="flex-1">{issue}</span>
+                {checked ? <Check className="size-4 text-gov-blue" /> : null}
+              </div>
+            );
+          })}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function parseSavedIssues(value?: string) {
+  return String(value || "")
+    .split(/[,;|]/)
+    .map((item) => item.trim())
+    .map((item) => (item === "Other / Document" ? "Document Missing" : item))
+    .filter((item): item is (typeof REGISTRATION_ISSUES)[number] => REGISTRATION_ISSUES.includes(item as (typeof REGISTRATION_ISSUES)[number]));
 }
 
 function issueToPendingReason(issue: string) {

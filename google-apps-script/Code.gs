@@ -180,7 +180,7 @@ function updateSurvey_(body) {
 
   const before = getBeneficiaries_()[targetRowIndex - 1];
 
-  const selectedReasons = normalizeReasons_(body.issue || body.reasons || body.reason || []);
+  const selectedReasons = normalizeReasons_(body.reasons || body.issue || body.reason || []);
   ISSUE_COLUMNS.forEach(function (issue) {
     const column = ensureHeader_(sheet, headers, issue.header);
     sheet.getRange(targetRowIndex + 1, column + 1).setValue(selectedReasons.indexOf(issue.reason) >= 0 ? "NO" : "YES");
@@ -519,6 +519,16 @@ function isNo_(value) {
 }
 
 function normalizeIssueText_(value) {
+  if (Array.isArray(value)) {
+    return unique_(
+      value
+        .map(function (item) {
+          return normalizeIssueText_(item);
+        })
+        .filter(Boolean),
+    ).join(", ");
+  }
+
   const text = stripHindi_(String(value || "").replace(/[^\x00-\x7F]+/g, "")).trim();
   const upper = text.toUpperCase();
   if (upper === "DOCUMENT MISSING") return "Document Missing";

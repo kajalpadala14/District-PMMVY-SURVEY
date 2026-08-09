@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { DANTEWADA_GRAM_PANCHAYATS } from "@/data/dantewada-gps";
 import { PENDING_REASONS } from "@/data/district";
 import { useFilters } from "./filters-context";
 
@@ -17,14 +18,11 @@ const ALL = "__all__";
 export function FilterPanel() {
   const { filters, setFilter, reset, activeCount, rows, allRows } = useFilters();
 
-  const projects = unique(allRows.map((b) => b.project ?? ""));
-  const projectRows = allRows.filter((b) => !filters.project || b.project === filters.project);
-  const blocks = unique(projectRows.map((b) => b.block));
-  const gps = unique(projectRows.filter((b) => !filters.block || b.block === filters.block).map((b) => b.gp));
+  const gps = unique([...allRows.map((b) => b.gp), ...DANTEWADA_GRAM_PANCHAYATS.map((b) => b.gp)]);
   const villages = [
     ...new Set(
-      projectRows
-        .filter((b) => (!filters.block || b.block === filters.block) && (!filters.gp || b.gp === filters.gp))
+      allRows
+        .filter((b) => !filters.gp || b.gp === filters.gp)
         .map((b) => b.village),
     ),
   ].sort();
@@ -53,8 +51,6 @@ export function FilterPanel() {
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <SearchBox value={filters.q ?? ""} onChange={(v) => setFilter("q", v)} />
-        <Picker label="Project" value={filters.project} options={projects} onChange={(v) => setFilter("project", v)} />
-        <Picker label="Block" value={filters.block} options={blocks} onChange={(v) => setFilter("block", v)} />
         <Picker label="Gram Panchayat" value={filters.gp} options={gps} onChange={(v) => setFilter("gp", v)} />
         <Picker label="Village" value={filters.village} options={villages} onChange={(v) => setFilter("village", v)} />
         <Picker
