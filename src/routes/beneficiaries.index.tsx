@@ -7,6 +7,7 @@ import { PortalNavCard } from "@/components/dash/portal-nav-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatBeneficiaryReasons } from "@/data/district";
+import { getSurveyStatusClass } from "@/lib/survey-status";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/beneficiaries/")({
@@ -66,11 +67,7 @@ function Beneficiaries() {
                   <td className="px-2 py-2">
                     <Badge
                       variant="outline"
-                      className={cn(
-                        b.surveyStatus === "Completed"
-                          ? "border-gov-green/40 bg-gov-green-soft text-gov-green"
-                          : "border-gov-amber/40 bg-gov-amber-soft text-gov-amber",
-                      )}
+                      className={getSurveyStatusClass(b.surveyStatus)}
                     >
                       {b.surveyStatus}
                     </Badge>

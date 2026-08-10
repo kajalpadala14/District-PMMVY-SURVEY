@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { getSurveyStatusClass } from "@/lib/survey-status";
 import { cn } from "@/lib/utils";
 import { fetchSheetGet } from "@/lib/sheet-api";
 
@@ -509,8 +510,7 @@ function buildFallbackTimeline(row: { surveyStatus: string; registrationStatus?:
 }
 
 function getSurveyBadgeClass(status: string) {
-  if (status === "Completed" || status === "In Progress") return "border-gov-green/40 bg-gov-green-soft text-gov-green";
-  return "border-gov-amber/40 bg-gov-amber-soft text-gov-amber";
+  return getSurveyStatusClass(status);
 }
 
 function formatDisplayDateTime(date: string, time?: string) {

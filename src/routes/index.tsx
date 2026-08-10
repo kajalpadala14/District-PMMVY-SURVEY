@@ -24,6 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { beneficiaryHasIssue, ISSUE_DETAIL_HEADERS, ISSUE_REPORT_OPTIONS, issueDetailRows } from "@/lib/issue-report";
+import { getSurveyStatusClass } from "@/lib/survey-status";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -643,11 +644,16 @@ function BlockRow({ b, onSelect }: { b: ReturnType<typeof blockStats>[number]; o
 
 function StatusBadge({ value, good }: { value: string; good: string }) {
   const isGood = value === good;
+  const isSurveyStatus = ["Completed", "In Progress", "Reason Pending", "Pending"].includes(value);
   return (
     <Badge
       variant="outline"
       className={cn(
-        isGood ? "border-gov-green/40 bg-gov-green-soft text-gov-green" : "border-gov-amber/40 bg-gov-amber-soft text-gov-amber",
+        isSurveyStatus
+          ? getSurveyStatusClass(value)
+          : isGood
+            ? "border-gov-green/40 bg-gov-green-soft text-gov-green"
+            : "border-gov-red/40 bg-gov-red-soft text-gov-red",
       )}
     >
       {value}
