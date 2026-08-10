@@ -13,7 +13,7 @@ export const Route = createFileRoute("/blocks")({
       { title: "Block Monitoring | MVY - SURVEY Portal" },
       {
         name: "description",
-        content: "Block-wise scorecard of pending beneficiaries, issue split, survey percentage and performance score.",
+        content: "Block-wise scorecard of pending beneficiaries, issue split and survey percentage.",
       },
       { property: "og:title", content: "Block Monitoring | MVY - SURVEY Portal" },
       { property: "og:description", content: "Block-wise pending load, issue split and performance ranking." },
@@ -31,15 +31,12 @@ function Blocks() {
       <PageTitle title="Block Monitoring" subtitle="Compare all blocks on pending load, issue mix and survey performance" />
       <FilterPanel />
 
-      <div className="grid gap-3 xl:grid-cols-3">
+      <div className="grid gap-3 xl:grid-cols-2">
         <Panel title="Pending by Block" subtitle="Highest first">
           <HBar data={bs} nameKey="blockLabel" valueKey="pending" tone="var(--gov-red)" />
         </Panel>
         <Panel title="Survey % by Block" subtitle="District target 75%">
           <HBar data={bs} nameKey="blockLabel" valueKey="surveyPct" tone="var(--gov-green)" />
-        </Panel>
-        <Panel title="Performance Score" subtitle="Survey weightage 70% · resolution 30%">
-          <HBar data={[...bs].sort((a, b) => a.score - b.score)} nameKey="blockLabel" valueKey="score" />
         </Panel>
       </div>
 
@@ -52,14 +49,12 @@ function Blocks() {
                 <th className="px-2 py-2">Total</th>
                 <th className="px-2 py-2">Pending</th>
                 <th className="px-2 py-2">Survey Done</th>
-                <th className="px-2 py-2">Resolved</th>
                 <th className="px-2 py-2">Survey %</th>
                 <th className="px-2 py-2">MCP No</th>
                 <th className="px-2 py-2">Bank No</th>
                 <th className="px-2 py-2">Aadhaar No</th>
                 <th className="px-2 py-2">Adr-Bank No</th>
                 <th className="px-2 py-2">Other No</th>
-                <th className="px-2 py-2">Score</th>
                 <th className="px-2 py-2">Status</th>
                 <th className="px-2 py-2" />
               </tr>
@@ -71,7 +66,6 @@ function Blocks() {
                   <td className="num px-2 py-2">{b.total}</td>
                   <td className="num px-2 py-2 font-semibold text-gov-red">{b.pending}</td>
                   <td className="num px-2 py-2">{b.completed}</td>
-                  <td className="num px-2 py-2 text-gov-green">{b.resolved}</td>
                   <td className="px-2 py-2">
                     <Bar value={b.surveyPct} tone={b.surveyPct >= 70 ? "green" : "red"} />
                   </td>
@@ -80,7 +74,6 @@ function Blocks() {
                   <td className="num px-2 py-2">{b.aadhaar}</td>
                   <td className="num px-2 py-2">{b.link}</td>
                   <td className="num px-2 py-2">{b.other}</td>
-                  <td className="num px-2 py-2 font-semibold">{b.score}</td>
                   <td className="px-2 py-2">
                     <StatusPill value={b.surveyPct} />
                   </td>

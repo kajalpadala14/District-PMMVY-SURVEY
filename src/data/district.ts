@@ -168,7 +168,6 @@ export function normalizeProjectName(value?: string) {
 export function kpis(rows: Beneficiary[]) {
   const total = rows.length;
   const pending = rows.filter((r) => r.caseStatus === "Pending");
-  const resolved = total - pending.length;
   const surveyDone = rows.filter((r) => r.surveyStatus === "Completed").length;
   const surveyInProgress = rows.filter((r) => r.surveyStatus === "In Progress").length;
   const surveyPending = Math.max(0, total - surveyInProgress - surveyDone);
@@ -179,7 +178,6 @@ export function kpis(rows: Beneficiary[]) {
   return {
     total,
     pending: pending.length,
-    resolved,
     surveyDone,
     surveyInProgress,
     surveyPending,
@@ -199,7 +197,6 @@ export interface BlockStat {
   total: number;
   pending: number;
   completed: number;
-  resolved: number;
   surveyPct: number;
   mcp: number;
   bank: number;
@@ -207,7 +204,6 @@ export interface BlockStat {
   link: number;
   other: number;
   officers: number;
-  score: number;
 }
 
 export interface ProjectStat {
@@ -215,7 +211,6 @@ export interface ProjectStat {
   total: number;
   pending: number;
   completed: number;
-  resolved: number;
   surveyPct: number;
   blocks: number;
   gps: number;
@@ -225,7 +220,6 @@ export interface ProjectStat {
   aadhaar: number;
   link: number;
   other: number;
-  score: number;
 }
 
 export function projectStats(rows: Beneficiary[]): ProjectStat[] {
@@ -240,7 +234,6 @@ export function projectStats(rows: Beneficiary[]): ProjectStat[] {
         total: rs.length,
         pending,
         completed,
-        resolved: rs.length - pending,
         surveyPct,
         blocks: new Set(rs.map((r) => r.block).filter(Boolean)).size,
         gps: new Set(rs.map((r) => `${r.block}|${r.gp}`).filter(Boolean)).size,
@@ -250,7 +243,6 @@ export function projectStats(rows: Beneficiary[]): ProjectStat[] {
         aadhaar: reasonCount(rs, "Aadhaar Mismatch"),
         link: reasonCount(rs, "Aadhaar-Bank Link"),
         other: reasonCount(rs, "Other / Document"),
-        score: Math.round(surveyPct * 0.7 + (rs.length ? ((rs.length - pending) / rs.length) * 100 * 0.3 : 0)),
       };
     })
     .sort((a, b) => b.pending - a.pending);
@@ -270,7 +262,6 @@ export function blockStats(rows: Beneficiary[]): BlockStat[] {
         total: rs.length,
         pending,
         completed,
-        resolved: rs.length - pending,
         surveyPct,
         mcp: reasonCount(rs, "MCP Card Missing"),
         bank: reasonCount(rs, "Bank Account Issue"),
@@ -278,7 +269,6 @@ export function blockStats(rows: Beneficiary[]): BlockStat[] {
         link: reasonCount(rs, "Aadhaar-Bank Link"),
         other: reasonCount(rs, "Other / Document"),
         officers: new Set(rs.map((r) => r.officer).filter(Boolean)).size,
-        score: Math.round(surveyPct * 0.7 + (rs.length ? ((rs.length - pending) / rs.length) * 100 * 0.3 : 0)),
       };
     })
     .sort((a, b) => b.pending - a.pending);

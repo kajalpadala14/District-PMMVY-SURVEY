@@ -88,33 +88,33 @@ function SinglePageDashboard() {
     [customBlock, customGp, customIssue, customVillage, rows],
   );
   const downloadProjectReport = () => {
-    const headers = ["Project", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Score"];
-    const reportRows = ps.map((p) => [p.project, p.total, p.pending, p.completed, p.resolved, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other, p.score]);
+    const headers = ["Project", "Total", "Pending", "Survey Done", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No"];
+    const reportRows = ps.map((p) => [p.project, p.total, p.pending, p.completed, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other]);
     setPreview({ title: "Project Wise Report", filename: "mvy-project-wise-report.xls", format: "excel", headers, rows: reportRows });
   };
   const viewProjectReport = () => {
-    const headers = ["Project", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Score"];
-    const reportRows = ps.map((p) => [p.project, p.total, p.pending, p.completed, p.resolved, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other, p.score]);
+    const headers = ["Project", "Total", "Pending", "Survey Done", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No"];
+    const reportRows = ps.map((p) => [p.project, p.total, p.pending, p.completed, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other]);
     setPreview({ title: "Project Wise Report", filename: "mvy-project-wise-report.pdf", headers, rows: reportRows });
   };
   const downloadProjectPdf = () => {
-    const headers = ["Project", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Score"];
-    const reportRows = ps.map((p) => [p.project, p.total, p.pending, p.completed, p.resolved, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other, p.score]);
+    const headers = ["Project", "Total", "Pending", "Survey Done", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No"];
+    const reportRows = ps.map((p) => [p.project, p.total, p.pending, p.completed, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other]);
     setPreview({ title: "Project Wise Report", filename: "mvy-project-wise-report.pdf", headers, rows: reportRows });
   };
   const downloadBlockReport = () => {
-    const headers = ["Block", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers", "Score"];
-    const reportRows = bs.map((b) => [b.block, b.total, b.pending, b.completed, b.resolved, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers, b.score]);
+    const headers = ["Block", "Total", "Pending", "Survey Done", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers"];
+    const reportRows = bs.map((b) => [b.block, b.total, b.pending, b.completed, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers]);
     setPreview({ title: "Block Wise Report", filename: "mvy-block-wise-report.xls", format: "excel", headers, rows: reportRows });
   };
   const viewBlockReport = () => {
-    const headers = ["Block", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers", "Score"];
-    const reportRows = bs.map((b) => [b.block, b.total, b.pending, b.completed, b.resolved, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers, b.score]);
+    const headers = ["Block", "Total", "Pending", "Survey Done", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers"];
+    const reportRows = bs.map((b) => [b.block, b.total, b.pending, b.completed, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers]);
     setPreview({ title: "Block Wise Report", filename: "mvy-block-wise-report.pdf", headers, rows: reportRows });
   };
   const downloadBlockPdf = () => {
-    const headers = ["Block", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers", "Score"];
-    const reportRows = bs.map((b) => [b.block, b.total, b.pending, b.completed, b.resolved, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers, b.score]);
+    const headers = ["Block", "Total", "Pending", "Survey Done", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers"];
+    const reportRows = bs.map((b) => [b.block, b.total, b.pending, b.completed, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers]);
     setPreview({ title: "Block Wise Report", filename: "mvy-block-wise-report.pdf", headers, rows: reportRows });
   };
   const downloadGpReport = () => {
@@ -256,7 +256,6 @@ function SinglePageDashboard() {
                     <th className="px-2 py-2">Total</th>
                     <th className="px-2 py-2">Pending</th>
                     <th className="px-2 py-2">Survey Done</th>
-                    <th className="px-2 py-2">Resolved</th>
                     <th className="px-2 py-2">Survey %</th>
                     <th className="px-2 py-2">Blocks</th>
                     <th className="px-2 py-2">GPs</th>
@@ -266,7 +265,6 @@ function SinglePageDashboard() {
                     <th className="px-2 py-2">Aadhaar No</th>
                     <th className="px-2 py-2">Adr-Bank No</th>
                     <th className="px-2 py-2">Other No</th>
-                    <th className="px-2 py-2">Score</th>
                     <th className="px-2 py-2">Status</th>
                     <th className="px-2 py-2" />
                   </tr>
@@ -292,14 +290,12 @@ function SinglePageDashboard() {
                   <th className="px-2 py-2">Total</th>
                   <th className="px-2 py-2">Pending</th>
                   <th className="px-2 py-2">Survey Done</th>
-                  <th className="px-2 py-2">Resolved</th>
                   <th className="px-2 py-2">Survey %</th>
                   <th className="px-2 py-2">MCP No</th>
                   <th className="px-2 py-2">Bank No</th>
                   <th className="px-2 py-2">Aadhaar No</th>
                   <th className="px-2 py-2">Adr-Bank No</th>
                   <th className="px-2 py-2">Other No</th>
-                  <th className="px-2 py-2">Score</th>
                   <th className="px-2 py-2">Status</th>
                   <th className="px-2 py-2" />
                 </tr>
@@ -596,7 +592,6 @@ function ProjectRow({ p, onSelect }: { p: ReturnType<typeof projectStats>[number
       <td className="num px-2 py-2">{p.total}</td>
       <td className="num px-2 py-2 font-semibold text-gov-red">{p.pending}</td>
       <td className="num px-2 py-2">{p.completed}</td>
-      <td className="num px-2 py-2 text-gov-green">{p.resolved}</td>
       <td className="px-2 py-2"><Bar value={p.surveyPct} tone={p.surveyPct >= 70 ? "green" : "red"} /></td>
       <td className="num px-2 py-2">{p.blocks}</td>
       <td className="num px-2 py-2">{p.gps}</td>
@@ -606,7 +601,6 @@ function ProjectRow({ p, onSelect }: { p: ReturnType<typeof projectStats>[number
       <td className="num px-2 py-2">{p.aadhaar}</td>
       <td className="num px-2 py-2">{p.link}</td>
       <td className="num px-2 py-2">{p.other}</td>
-      <td className="num px-2 py-2 font-semibold">{p.score}</td>
       <td className="px-2 py-2"><StatusPill value={p.surveyPct} /></td>
       <td className="px-2 py-2">
         <Button size="sm" variant="outline" onClick={onSelect}>
@@ -624,14 +618,12 @@ function BlockRow({ b, onSelect }: { b: ReturnType<typeof blockStats>[number]; o
       <td className="num px-2 py-2">{b.total}</td>
       <td className="num px-2 py-2 font-semibold text-gov-red">{b.pending}</td>
       <td className="num px-2 py-2">{b.completed}</td>
-      <td className="num px-2 py-2 text-gov-green">{b.resolved}</td>
       <td className="px-2 py-2"><Bar value={b.surveyPct} tone={b.surveyPct >= 70 ? "green" : "red"} /></td>
       <td className="num px-2 py-2">{b.mcp}</td>
       <td className="num px-2 py-2">{b.bank}</td>
       <td className="num px-2 py-2">{b.aadhaar}</td>
       <td className="num px-2 py-2">{b.link}</td>
       <td className="num px-2 py-2">{b.other}</td>
-      <td className="num px-2 py-2 font-semibold">{b.score}</td>
       <td className="px-2 py-2"><StatusPill value={b.surveyPct} /></td>
       <td className="px-2 py-2">
         <Button size="sm" variant="outline" onClick={onSelect}>
