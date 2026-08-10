@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   BadgeCheck,
-  Boxes,
   CheckCircle2,
   ClipboardList,
   Download,
@@ -177,13 +176,10 @@ function SinglePageDashboard() {
         <section id="overview" className="scroll-mt-32 space-y-4">
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
           <KpiCard label="Total Beneficiaries" value={k.total.toLocaleString("en-IN")} icon={Users} tone="navy" />
-          <KpiCard label="Projects" value={ps.length.toLocaleString("en-IN")} icon={Boxes} tone="blue" />
-          <KpiCard label="Blocks" value={new Set(rows.map((row) => row.block).filter(Boolean)).size.toLocaleString("en-IN")} icon={Layers3} tone="blue" />
           <KpiCard label="Survey Completed" value={k.surveyDone.toLocaleString("en-IN")} icon={CheckCircle2} tone="green" />
           <KpiCard label="Survey Pending" value={k.surveyPending.toLocaleString("en-IN")} icon={ClipboardList} tone="amber" />
           <KpiCard label="Resolved Cases" value={k.resolved.toLocaleString("en-IN")} icon={BadgeCheck} tone="green" />
           <KpiCard label="Pending Cases" value={k.pending.toLocaleString("en-IN")} icon={ClipboardList} tone="red" />
-          <KpiCard label="Issue No Count" value={k.issueNoCount.toLocaleString("en-IN")} icon={ClipboardList} tone="red" />
         </div>
 
         <div className="grid gap-3 xl:grid-cols-3">
