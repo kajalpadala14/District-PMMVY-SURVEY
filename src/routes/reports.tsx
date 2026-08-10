@@ -1,15 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Download, Printer } from "lucide-react";
+import { Download, Eye } from "lucide-react";
 import { useMemo, useState } from "react";
 import { FilterPanel } from "@/components/dash/filter-panel";
 import { useFilters } from "@/components/dash/filters-context";
 import { Panel, PageTitle } from "@/components/dash/panel";
+import { ReportPreview, type ReportPreviewData } from "@/components/dash/report-preview";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { REGISTRATION_ISSUES } from "@/data/district";
 import { blockStats, gpStats, projectStats } from "@/data/district";
 import { downloadExcelReport } from "@/lib/export-excel";
+import { downloadPdfReport } from "@/lib/export-pdf";
 import { beneficiaryHasIssue, ISSUE_DETAIL_HEADERS, ISSUE_REPORT_OPTIONS, issueDetailRows } from "@/lib/issue-report";
 
 export const Route = createFileRoute("/reports")({
@@ -18,7 +20,7 @@ export const Route = createFileRoute("/reports")({
       { title: "Reports & Export | MVY - SURVEY Portal" },
       {
         name: "description",
-        content: "Print filter-aware district, GP, pending and resolved reports.",
+        content: "Download filter-aware district, GP, pending and resolved reports.",
       },
       { property: "og:title", content: "Reports & Export | MVY - SURVEY Portal" },
       { property: "og:description", content: "Filter-aware report views for district review and monitoring." },
@@ -44,6 +46,7 @@ function Reports() {
   const [customGp, setCustomGp] = useState("");
   const [customVillage, setCustomVillage] = useState("");
   const [customIssue, setCustomIssue] = useState("");
+  const [preview, setPreview] = useState<ReportPreviewData | null>(null);
   const gps = gpStats(rows);
   const projects = projectStats(rows);
   const blocks = blockStats(rows);
@@ -72,30 +75,51 @@ function Reports() {
   );
 
   const downloadProjectReport = () => {
-    downloadExcelReport(
-      "mvy-project-wise-report.xls",
-      "Project Wise Report",
-      ["Project", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Score"],
-      projects.map((p) => [p.project, p.total, p.pending, p.completed, p.resolved, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other, p.score]),
-    );
+    const headers = ["Project", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Score"];
+    const reportRows = projects.map((p) => [p.project, p.total, p.pending, p.completed, p.resolved, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other, p.score]);
+    downloadExcelReport("mvy-project-wise-report.xls", "Project Wise Report", headers, reportRows);
+  };
+  const viewProjectReport = () => {
+    const headers = ["Project", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Score"];
+    const reportRows = projects.map((p) => [p.project, p.total, p.pending, p.completed, p.resolved, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other, p.score]);
+    setPreview({ title: "Project Wise Report", headers, rows: reportRows });
+  };
+  const downloadProjectPdf = () => {
+    const headers = ["Project", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Score"];
+    const reportRows = projects.map((p) => [p.project, p.total, p.pending, p.completed, p.resolved, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other, p.score]);
+    downloadPdfReport("mvy-project-wise-report.pdf", "Project Wise Report", headers, reportRows);
   };
 
   const downloadBlockReport = () => {
-    downloadExcelReport(
-      "mvy-block-wise-report.xls",
-      "Block Wise Report",
-      ["Block", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers", "Score"],
-      blocks.map((b) => [b.block, b.total, b.pending, b.completed, b.resolved, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers, b.score]),
-    );
+    const headers = ["Block", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers", "Score"];
+    const reportRows = blocks.map((b) => [b.block, b.total, b.pending, b.completed, b.resolved, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers, b.score]);
+    downloadExcelReport("mvy-block-wise-report.xls", "Block Wise Report", headers, reportRows);
+  };
+  const viewBlockReport = () => {
+    const headers = ["Block", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers", "Score"];
+    const reportRows = blocks.map((b) => [b.block, b.total, b.pending, b.completed, b.resolved, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers, b.score]);
+    setPreview({ title: "Block Wise Report", headers, rows: reportRows });
+  };
+  const downloadBlockPdf = () => {
+    const headers = ["Block", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers", "Score"];
+    const reportRows = blocks.map((b) => [b.block, b.total, b.pending, b.completed, b.resolved, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers, b.score]);
+    downloadPdfReport("mvy-block-wise-report.pdf", "Block Wise Report", headers, reportRows);
   };
 
   const downloadGpReport = () => {
-    downloadExcelReport(
-      "mvy-gp-wise-report.xls",
-      "GP Wise Report",
-      ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"],
-      gps.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]),
-    );
+    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
+    const reportRows = gps.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
+    downloadExcelReport("mvy-gp-wise-report.xls", "GP Wise Report", headers, reportRows);
+  };
+  const viewGpReport = () => {
+    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
+    const reportRows = gps.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
+    setPreview({ title: "GP Wise Report", headers, rows: reportRows });
+  };
+  const downloadGpPdf = () => {
+    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
+    const reportRows = gps.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
+    downloadPdfReport("mvy-gp-wise-report.pdf", "GP Wise Report", headers, reportRows);
   };
 
   const downloadIssueDetailReport = (issue: string) => {
@@ -105,6 +129,16 @@ function Reports() {
       ISSUE_DETAIL_HEADERS,
       issueDetailRows(rows, issue),
     );
+  };
+  const viewIssueDetailReport = (issue?: string) => {
+    setPreview({
+      title: issue ? `${issue} Issue Detail Report` : "Issue Detail Report",
+      headers: ISSUE_DETAIL_HEADERS,
+      rows: issueDetailRows(rows, issue),
+    });
+  };
+  const downloadIssueDetailPdf = () => {
+    downloadPdfReport("mvy-issue-detail-report.pdf", "Issue Detail Report", ISSUE_DETAIL_HEADERS, issueDetailRows(rows));
   };
 
   const downloadCustomReport = () => {
@@ -116,6 +150,34 @@ function Reports() {
       issueDetailRows(customRows, customIssue || undefined),
     );
   };
+  const viewCustomReport = () => {
+    setPreview({
+      title: "Custom Filtered Report",
+      headers: ISSUE_DETAIL_HEADERS,
+      rows: issueDetailRows(customRows, customIssue || undefined),
+    });
+  };
+  const downloadCustomPdf = () => {
+    const suffix = [customBlock, customGp, customVillage, customIssue].filter(Boolean).map(slugify).join("-");
+    downloadPdfReport(
+      `mvy-custom-filtered-report${suffix ? `-${suffix}` : ""}.pdf`,
+      "Custom Filtered Report",
+      ISSUE_DETAIL_HEADERS,
+      issueDetailRows(customRows, customIssue || undefined),
+    );
+  };
+  const viewResolvedCasesReport = () => {
+    const headers = ["Application ID", "Name", "Project", "Block", "Gram Panchayat", "Village", "Mobile", "Survey Status", "Case Status", "Last Survey", "Remark"];
+    const reportRows = rows
+      .filter((row) => row.caseStatus === "Resolved")
+      .map((row) => [row.appId, row.name, row.project ?? "", row.block, row.gp, row.village, row.mobile, row.surveyStatus, row.caseStatus, row.lastSurvey ?? "", row.remark ?? ""]);
+    setPreview({ title: "Resolved Cases Report", headers, rows: reportRows });
+  };
+  const viewSurveyProgressReport = () => {
+    const headers = ["Application ID", "Name", "Project", "Block", "Gram Panchayat", "Village", "Survey Status", "Case Status", "Pending Days", "Officer", "Last Survey"];
+    const reportRows = rows.map((row) => [row.appId, row.name, row.project ?? "", row.block, row.gp, row.village, row.surveyStatus, row.caseStatus, row.pendingDays, row.officer, row.lastSurvey ?? ""]);
+    setPreview({ title: "Survey Progress Report", headers, rows: reportRows });
+  };
 
   return (
     <>
@@ -124,7 +186,7 @@ function Reports() {
 
       <Panel
         title="Available Reports"
-        subtitle="Print-ready report views"
+        subtitle="PDF and Excel report views"
         action={
           <Badge variant="secondary" className="num">
             {rows.length.toLocaleString("en-IN")} records in scope
@@ -170,6 +232,12 @@ function Reports() {
             <Button size="sm" onClick={downloadCustomReport}>
               <Download className="size-3.5" /> Download Excel
             </Button>
+            <Button size="sm" variant="outline" onClick={downloadCustomPdf}>
+              <Download className="size-3.5" /> Download PDF
+            </Button>
+            <Button size="sm" variant="outline" onClick={viewCustomReport}>
+              <Eye className="size-3.5" /> View
+            </Button>
             <Button
               size="sm"
               variant="outline"
@@ -195,15 +263,24 @@ function Reports() {
                       <p className="text-sm font-semibold text-foreground">{name}</p>
                       <p className="text-[11px] text-muted-foreground">{desc}</p>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => window.print()}>
-                      <Printer className="size-3.5" /> Print
+                    <Button size="sm" variant="outline" onClick={() => viewIssueDetailReport()}>
+                      <Eye className="size-3.5" /> View
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={downloadIssueDetailPdf}>
+                      <Download className="size-3.5" /> PDF
                     </Button>
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {ISSUE_REPORT_OPTIONS.map((issue) => (
-                      <Button key={issue} size="sm" variant="outline" className="justify-start" onClick={() => downloadIssueDetailReport(issue)}>
-                        <Download className="size-3.5" /> {issue}
-                      </Button>
+                      <div key={issue} className="flex gap-2 rounded-md border border-border p-2">
+                        <span className="min-w-0 flex-1 self-center text-xs font-medium">{issue}</span>
+                        <Button size="sm" variant="outline" onClick={() => viewIssueDetailReport(issue)}>
+                          <Eye className="size-3.5" /> View
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => downloadIssueDetailReport(issue)}>
+                          <Download className="size-3.5" /> Excel
+                        </Button>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -214,8 +291,23 @@ function Reports() {
                     <p className="text-[11px] text-muted-foreground">{desc}</p>
                   </div>
                   {name === "Project Wise Report" ? (
+                    <Button size="sm" variant="outline" onClick={viewProjectReport}>
+                      <Eye className="size-3.5" /> View
+                    </Button>
+                  ) : null}
+                  {name === "Project Wise Report" ? (
                     <Button size="sm" variant="outline" onClick={downloadProjectReport}>
                       <Download className="size-3.5" /> Excel
+                    </Button>
+                  ) : null}
+                  {name === "Project Wise Report" ? (
+                    <Button size="sm" variant="outline" onClick={downloadProjectPdf}>
+                      <Download className="size-3.5" /> PDF
+                    </Button>
+                  ) : null}
+                  {name === "Block Wise Report" ? (
+                    <Button size="sm" variant="outline" onClick={viewBlockReport}>
+                      <Eye className="size-3.5" /> View
                     </Button>
                   ) : null}
                   {name === "Block Wise Report" ? (
@@ -223,25 +315,43 @@ function Reports() {
                       <Download className="size-3.5" /> Excel
                     </Button>
                   ) : null}
+                  {name === "Block Wise Report" ? (
+                    <Button size="sm" variant="outline" onClick={downloadBlockPdf}>
+                      <Download className="size-3.5" /> PDF
+                    </Button>
+                  ) : null}
+                  {name === "Gram Panchayat Report" ? (
+                    <Button size="sm" variant="outline" onClick={viewGpReport}>
+                      <Eye className="size-3.5" /> View
+                    </Button>
+                  ) : null}
                   {name === "Gram Panchayat Report" ? (
                     <Button size="sm" variant="outline" onClick={downloadGpReport}>
                       <Download className="size-3.5" /> Excel
                     </Button>
                   ) : null}
-                  <Button size="sm" variant="outline" onClick={() => window.print()}>
-                    <Printer className="size-3.5" /> Print
-                  </Button>
+                  {name === "Gram Panchayat Report" ? (
+                    <Button size="sm" variant="outline" onClick={downloadGpPdf}>
+                      <Download className="size-3.5" /> PDF
+                    </Button>
+                  ) : null}
+                  {name === "Resolved Cases Report" ? (
+                    <Button size="sm" variant="outline" onClick={viewResolvedCasesReport}>
+                      <Eye className="size-3.5" /> View
+                    </Button>
+                  ) : null}
+                  {name === "Survey Progress Report" ? (
+                    <Button size="sm" variant="outline" onClick={viewSurveyProgressReport}>
+                      <Eye className="size-3.5" /> View
+                    </Button>
+                  ) : null}
                 </div>
               )}
             </div>
           ))}
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-2 border-t border-border pt-4">
-          <Button variant="outline" onClick={() => window.print()}>
-            <Printer className="size-4" /> Print view
-          </Button>
-        </div>
+        <ReportPreview report={preview} />
       </Panel>
     </>
   );

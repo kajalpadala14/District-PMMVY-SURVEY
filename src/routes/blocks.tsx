@@ -10,12 +10,12 @@ import { Button } from "@/components/ui/button";
 export const Route = createFileRoute("/blocks")({
   head: () => ({
     meta: [
-      { title: "Block Monitoring | MVY District Command Centre" },
+      { title: "Block Monitoring | MVY - SURVEY Portal" },
       {
         name: "description",
         content: "Block-wise scorecard of pending beneficiaries, issue split, survey percentage and performance score.",
       },
-      { property: "og:title", content: "Block Monitoring | MVY District Command Centre" },
+      { property: "og:title", content: "Block Monitoring | MVY - SURVEY Portal" },
       { property: "og:description", content: "Block-wise pending load, issue split and performance ranking." },
     ],
   }),

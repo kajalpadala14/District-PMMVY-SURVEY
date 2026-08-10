@@ -5,6 +5,9 @@ import {
   type Beneficiary,
   type Filters,
 } from "@/data/district";
+import { fetchSheetGet, fetchSheetPost, isSheetApiConfigured } from "@/lib/sheet-api";
+
+const SHEET_ROWS_CACHE_KEY = "mvy.sheet.rows.v1";
 
 interface Ctx {
   filters: Filters;
@@ -37,12 +40,16 @@ const FiltersContext = createContext<Ctx | null>(null);
 export function FiltersProvider({ children }: { children: ReactNode }) {
   const [filters, setFilters] = useState<Filters>({});
   const [sourceRows, setSourceRows] = useState<Beneficiary[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(() => isSheetApiConfigured());
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
-    if (!apiUrl) return;
+    if (!isSheetApiConfigured()) return;
+
+    const cachedRows = readCachedRows();
+    if (cachedRows.length) {
+      setSourceRows(cachedRows);
+    }
 
     setIsLoading(true);
     setError(null);
@@ -50,14 +57,12 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
       action: "beneficiaries",
     });
 
-    fetch(`/api/sheet?${params.toString()}`)
-      .then((response) => {
-        if (!response.ok) throw new Error(`Sheet API failed: ${response.status}`);
-        return response.json();
-      })
+    fetchSheetGet<Beneficiary[]>(params)
       .then((payload) => {
         if (!payload.ok || !Array.isArray(payload.data)) throw new Error(payload.error || "Invalid sheet API response");
-        setSourceRows(payload.data.map(normalizeBeneficiarySurveyStatus));
+        const rows = payload.data.map(normalizeBeneficiarySurveyStatus);
+        setSourceRows(rows);
+        writeCachedRows(rows);
       })
       .catch((error) => {
         console.error(error);
@@ -87,21 +92,19 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
       });
 
     const updateSurvey: Ctx["updateSurvey"] = async (payload) => {
-      const apiUrl = import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL;
-      if (!apiUrl) throw new Error("VITE_GOOGLE_APPS_SCRIPT_URL is not configured.");
+      if (!isSheetApiConfigured()) throw new Error("VITE_GOOGLE_APPS_SCRIPT_URL is not configured.");
 
-      const response = await fetch("/api/sheet", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "updateSurvey", ...payload }),
-      });
-      const result = await response.json();
-      if (!response.ok || !result.ok || !result.data) {
+      const result = await fetchSheetPost<Beneficiary>({ action: "updateSurvey", ...payload });
+      if (!result.ok || !result.data) {
         throw new Error(result.error || "Unable to save survey.");
       }
 
       const updated = normalizeBeneficiarySurveyStatus(result.data);
-      setSourceRows((current) => current.map((row) => (row.id === updated.id ? updated : row)));
+      setSourceRows((current) => {
+        const next = current.map((row) => (row.id === updated.id ? updated : row));
+        writeCachedRows(next);
+        return next;
+      });
       return updated;
     };
 
@@ -112,7 +115,7 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
       rows: applyFilters(sourceRows, filters),
       allRows: sourceRows,
       activeCount: Object.values(filters).filter(Boolean).length,
-      isSheetConfigured: Boolean(import.meta.env.VITE_GOOGLE_APPS_SCRIPT_URL),
+      isSheetConfigured: isSheetApiConfigured(),
       isLoading,
       error,
       updateSurvey,
@@ -136,4 +139,33 @@ function normalizeBeneficiarySurveyStatus(row: Beneficiary): Beneficiary {
     return { ...normalized, surveyStatus: "Pending" };
   }
   return normalized;
+}
+
+function readCachedRows() {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const text = window.localStorage.getItem(SHEET_ROWS_CACHE_KEY);
+    if (!text) return [];
+    const payload = JSON.parse(text) as { rows?: Beneficiary[] };
+    return Array.isArray(payload.rows) ? payload.rows.map(normalizeBeneficiarySurveyStatus) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeCachedRows(rows: Beneficiary[]) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(
+      SHEET_ROWS_CACHE_KEY,
+      JSON.stringify({
+        cachedAt: new Date().toISOString(),
+        rows,
+      }),
+    );
+  } catch {
+    // Storage can be full or disabled; live sheet data still works.
+  }
 }

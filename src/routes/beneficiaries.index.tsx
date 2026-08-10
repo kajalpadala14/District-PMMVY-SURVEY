@@ -10,12 +10,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/beneficiaries/")({
   head: () => ({
     meta: [
-      { title: "Pending Beneficiaries | MVY District Command Centre" },
+      { title: "Pending Beneficiaries | MVY - SURVEY Portal" },
       {
         name: "description",
-        content: "Search and drill into pending Mahtari Vandan Yojana beneficiaries by name, application ID, village, GP or block.",
+        content: "Search and drill into pending Mahtari Vandan Yojana beneficiaries by name, application ID, village or GP.",
       },
-      { property: "og:title", content: "Pending Beneficiaries | MVY District Command Centre" },
+      { property: "og:title", content: "Pending Beneficiaries | MVY - SURVEY Portal" },
       { property: "og:description", content: "Instant search across district beneficiaries with survey and pending status." },
     ],
   }),
@@ -33,7 +33,7 @@ function Beneficiaries() {
 
   return (
     <>
-      <PageTitle title="Beneficiary Register" subtitle="Instant search by name, application ID, mobile, village, GP or block" />
+      <PageTitle title="Beneficiary Register" subtitle="Instant search by name, application ID, mobile, village or GP" />
       <FilterPanel />
 
       <Panel title="Beneficiaries" subtitle={`${rows.length.toLocaleString("en-IN")} records in current selection`}>
@@ -42,11 +42,9 @@ function Beneficiaries() {
             <thead>
               <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                 <th className="px-2 py-2">Application ID</th>
-                <th className="px-2 py-2">Project</th>
                 <th className="px-2 py-2">Name</th>
                 <th className="px-2 py-2">Village</th>
                 <th className="px-2 py-2">GP</th>
-                <th className="px-2 py-2">Block</th>
                 <th className="px-2 py-2">Pending Reason</th>
                 <th className="px-2 py-2">Survey</th>
                 <th className="px-2 py-2">Status</th>
@@ -58,11 +56,9 @@ function Beneficiaries() {
               {view.map((b) => (
                 <tr key={b.id} className="border-b border-border/70 hover:bg-secondary/60">
                   <td className="num px-2 py-2">{b.appId}</td>
-                  <td className="px-2 py-2">{b.project}</td>
                   <td className="px-2 py-2 font-semibold">{b.name}</td>
                   <td className="px-2 py-2">{b.village}</td>
                   <td className="px-2 py-2">{b.gp}</td>
-                  <td className="px-2 py-2">{b.block}</td>
                   <td className="px-2 py-2">{b.reason}</td>
                   <td className="px-2 py-2">
                     <Badge

@@ -51,11 +51,7 @@ export const Route = createFileRoute("/api/sheet")({
           return Response.json(
             {
               ok: false,
-              error: timedOut
-                ? "Google Sheet request timed out. Apps Script is taking too long to respond."
-                : error instanceof Error
-                  ? error.message
-                  : "Unable to fetch Google Sheet data.",
+              error: formatUpstreamError(error, "Google Sheet request timed out. Apps Script is taking too long to respond."),
             },
             { status: timedOut ? 504 : 502 },
           );
@@ -107,11 +103,7 @@ export const Route = createFileRoute("/api/sheet")({
           return Response.json(
             {
               ok: false,
-              error: timedOut
-                ? "Google Sheet update timed out. Apps Script is taking too long to respond."
-                : error instanceof Error
-                  ? error.message
-                  : "Unable to update Google Sheet data.",
+              error: formatUpstreamError(error, "Google Sheet update timed out. Apps Script is taking too long to respond."),
             },
             { status: timedOut ? 504 : 502 },
           );
@@ -125,4 +117,12 @@ function fetchWithTimeout(input: RequestInfo | URL, init: RequestInit, timeoutMs
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   return fetch(input, { ...init, signal: controller.signal }).finally(() => clearTimeout(timeout));
+}
+
+function formatUpstreamError(error: unknown, timeoutMessage: string) {
+  if (error instanceof Error && error.name === "AbortError") return timeoutMessage;
+  if (error instanceof Error && /fetch failed|failed to fetch/i.test(error.message)) {
+    return "Google Apps Script se connection nahi ho pa raha. Internet connection, Apps Script deployment access, aur Web App URL check karein.";
+  }
+  return error instanceof Error ? error.message : "Unable to reach Google Sheet data.";
 }

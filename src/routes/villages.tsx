@@ -10,12 +10,12 @@ import { Badge } from "@/components/ui/badge";
 export const Route = createFileRoute("/villages")({
   head: () => ({
     meta: [
-      { title: "Village Monitoring | MVY District Command Centre" },
+      { title: "Village Monitoring | MVY - SURVEY Portal" },
       {
         name: "description",
         content: "Village-level pending beneficiaries, survey percentage, assigned officer and last survey date.",
       },
-      { property: "og:title", content: "Village Monitoring | MVY District Command Centre" },
+      { property: "og:title", content: "Village Monitoring | MVY - SURVEY Portal" },
       { property: "og:description", content: "Villages demanding attention with critical cases and stale surveys." },
     ],
   }),

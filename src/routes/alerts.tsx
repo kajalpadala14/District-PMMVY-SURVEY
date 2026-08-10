@@ -10,12 +10,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/alerts")({
   head: () => ({
     meta: [
-      { title: "Alerts & Escalation | MVY District Command Centre" },
+      { title: "Alerts & Escalation | MVY - SURVEY Portal" },
       {
         name: "description",
         content: "Automatic escalation triggers for blocks crossing thresholds, inactive officers and long pending beneficiaries.",
       },
-      { property: "og:title", content: "Alerts & Escalation | MVY District Command Centre" },
+      { property: "og:title", content: "Alerts & Escalation | MVY - SURVEY Portal" },
       { property: "og:description", content: "Red, orange and green escalation indicators for district review meetings." },
     ],
   }),

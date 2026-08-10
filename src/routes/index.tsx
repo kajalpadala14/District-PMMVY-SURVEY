@@ -4,10 +4,10 @@ import {
   CheckCircle2,
   ClipboardList,
   Download,
+  Eye,
   FileSpreadsheet,
   Layers3,
   Landmark,
-  Printer,
   RotateCcw,
   Users,
 } from "lucide-react";
@@ -17,7 +17,8 @@ import { useFilters } from "@/components/dash/filters-context";
 import { FilterPanel } from "@/components/dash/filter-panel";
 import { KpiCard } from "@/components/dash/kpi-card";
 import { Bar, Panel, StatusPill } from "@/components/dash/panel";
-import { HBar, ProgressDonut, ReasonPie, VBar } from "@/components/dash/charts";
+import { ReportPreview, type ReportPreviewData } from "@/components/dash/report-preview";
+import { LazyChart } from "@/components/dash/lazy-charts";
 import { blockStats, gpStats, kpis, projectStats, reasonStats } from "@/data/district";
 import { REGISTRATION_ISSUES } from "@/data/district";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { downloadExcelReport } from "@/lib/export-excel";
+import { downloadPdfReport } from "@/lib/export-pdf";
 import { beneficiaryHasIssue, ISSUE_DETAIL_HEADERS, ISSUE_REPORT_OPTIONS, issueDetailRows } from "@/lib/issue-report";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +61,7 @@ function SinglePageDashboard() {
   const [customGp, setCustomGp] = useState("");
   const [customVillage, setCustomVillage] = useState("");
   const [customIssue, setCustomIssue] = useState("");
+  const [preview, setPreview] = useState<ReportPreviewData | null>(null);
   const k = kpis(rows);
   const ps = projectStats(rows);
   const bs = blockStats(rows);
@@ -88,28 +91,49 @@ function SinglePageDashboard() {
     [customBlock, customGp, customIssue, customVillage, rows],
   );
   const downloadProjectReport = () => {
-    downloadExcelReport(
-      "mvy-project-wise-report.xls",
-      "Project Wise Report",
-      ["Project", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Score"],
-      ps.map((p) => [p.project, p.total, p.pending, p.completed, p.resolved, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other, p.score]),
-    );
+    const headers = ["Project", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Score"];
+    const reportRows = ps.map((p) => [p.project, p.total, p.pending, p.completed, p.resolved, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other, p.score]);
+    downloadExcelReport("mvy-project-wise-report.xls", "Project Wise Report", headers, reportRows);
+  };
+  const viewProjectReport = () => {
+    const headers = ["Project", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Score"];
+    const reportRows = ps.map((p) => [p.project, p.total, p.pending, p.completed, p.resolved, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other, p.score]);
+    setPreview({ title: "Project Wise Report", headers, rows: reportRows });
+  };
+  const downloadProjectPdf = () => {
+    const headers = ["Project", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Score"];
+    const reportRows = ps.map((p) => [p.project, p.total, p.pending, p.completed, p.resolved, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other, p.score]);
+    downloadPdfReport("mvy-project-wise-report.pdf", "Project Wise Report", headers, reportRows);
   };
   const downloadBlockReport = () => {
-    downloadExcelReport(
-      "mvy-block-wise-report.xls",
-      "Block Wise Report",
-      ["Block", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers", "Score"],
-      bs.map((b) => [b.block, b.total, b.pending, b.completed, b.resolved, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers, b.score]),
-    );
+    const headers = ["Block", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers", "Score"];
+    const reportRows = bs.map((b) => [b.block, b.total, b.pending, b.completed, b.resolved, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers, b.score]);
+    downloadExcelReport("mvy-block-wise-report.xls", "Block Wise Report", headers, reportRows);
+  };
+  const viewBlockReport = () => {
+    const headers = ["Block", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers", "Score"];
+    const reportRows = bs.map((b) => [b.block, b.total, b.pending, b.completed, b.resolved, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers, b.score]);
+    setPreview({ title: "Block Wise Report", headers, rows: reportRows });
+  };
+  const downloadBlockPdf = () => {
+    const headers = ["Block", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers", "Score"];
+    const reportRows = bs.map((b) => [b.block, b.total, b.pending, b.completed, b.resolved, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers, b.score]);
+    downloadPdfReport("mvy-block-wise-report.pdf", "Block Wise Report", headers, reportRows);
   };
   const downloadGpReport = () => {
-    downloadExcelReport(
-      "mvy-gp-wise-report.xls",
-      "GP Wise Report",
-      ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"],
-      gs.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]),
-    );
+    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
+    const reportRows = gs.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
+    downloadExcelReport("mvy-gp-wise-report.xls", "GP Wise Report", headers, reportRows);
+  };
+  const viewGpReport = () => {
+    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
+    const reportRows = gs.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
+    setPreview({ title: "GP Wise Report", headers, rows: reportRows });
+  };
+  const downloadGpPdf = () => {
+    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
+    const reportRows = gs.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
+    downloadPdfReport("mvy-gp-wise-report.pdf", "GP Wise Report", headers, reportRows);
   };
   const downloadIssueDetailReport = (issue: string) => {
     downloadExcelReport(
@@ -119,10 +143,36 @@ function SinglePageDashboard() {
       issueDetailRows(rows, issue),
     );
   };
+  const viewIssueDetailReport = (issue?: string) => {
+    setPreview({
+      title: issue ? `${issue} Issue Detail Report` : "Issue Detail Report",
+      headers: ISSUE_DETAIL_HEADERS,
+      rows: issueDetailRows(rows, issue),
+    });
+  };
+  const downloadIssueDetailPdf = () => {
+    downloadPdfReport("mvy-issue-detail-report.pdf", "Issue Detail Report", ISSUE_DETAIL_HEADERS, issueDetailRows(rows));
+  };
   const downloadCustomReport = () => {
     const suffix = [customBlock, customGp, customVillage, customIssue].filter(Boolean).map(slugify).join("-");
     downloadExcelReport(
       `mvy-custom-filtered-report${suffix ? `-${suffix}` : ""}.xls`,
+      "Custom Filtered Report",
+      ISSUE_DETAIL_HEADERS,
+      issueDetailRows(customRows, customIssue || undefined),
+    );
+  };
+  const viewCustomReport = () => {
+    setPreview({
+      title: "Custom Filtered Report",
+      headers: ISSUE_DETAIL_HEADERS,
+      rows: issueDetailRows(customRows, customIssue || undefined),
+    });
+  };
+  const downloadCustomPdf = () => {
+    const suffix = [customBlock, customGp, customVillage, customIssue].filter(Boolean).map(slugify).join("-");
+    downloadPdfReport(
+      `mvy-custom-filtered-report${suffix ? `-${suffix}` : ""}.pdf`,
       "Custom Filtered Report",
       ISSUE_DETAIL_HEADERS,
       issueDetailRows(customRows, customIssue || undefined),
@@ -184,13 +234,13 @@ function SinglePageDashboard() {
 
         <div className="grid gap-3 xl:grid-cols-3">
           <Panel title="Block Wise Pending" subtitle="Pending beneficiaries by block">
-            <HBar data={bs} nameKey="blockLabel" valueKey="pending" tone="var(--gov-red)" />
+            <LazyChart kind="HBar" data={bs} nameKey="blockLabel" valueKey="pending" tone="var(--gov-red)" />
           </Panel>
           <Panel title="Survey Progress" subtitle="Completed vs pending surveys">
-            <ProgressDonut done={k.surveyDone} pending={k.surveyPending} />
+            <LazyChart kind="ProgressDonut" done={k.surveyDone} pending={k.surveyPending} height={250} />
           </Panel>
           <Panel title="Pending Reason Distribution" subtitle="Why payments are stuck">
-            <ReasonPie data={reasonStats(rows)} />
+            <LazyChart kind="ReasonPie" data={reasonStats(rows)} height={250} />
           </Panel>
         </div>
       </section>
@@ -262,7 +312,7 @@ function SinglePageDashboard() {
 
       <section id="gps" className="grid scroll-mt-32 gap-3 xl:grid-cols-[420px_1fr]">
         <Panel title="Top GPs by Pending" subtitle="Immediate intervention list">
-          <VBar data={gs.slice(0, 10)} nameKey="gp" valueKey="pending" height={280} />
+          <LazyChart kind="VBar" data={gs.slice(0, 10)} nameKey="gp" valueKey="pending" height={280} />
         </Panel>
         <Panel
           title="Gram Panchayat Queue"
@@ -424,6 +474,12 @@ function SinglePageDashboard() {
                 <Button size="sm" onClick={downloadCustomReport}>
                   <Download className="size-3.5" /> Download Excel
                 </Button>
+                <Button size="sm" variant="outline" onClick={downloadCustomPdf}>
+                  <Download className="size-3.5" /> Download PDF
+                </Button>
+                <Button size="sm" variant="outline" onClick={viewCustomReport}>
+                  <Eye className="size-3.5" /> View
+                </Button>
                 <Button
                   size="sm"
                   variant="outline"
@@ -445,15 +501,24 @@ function SinglePageDashboard() {
                     <div className="flex items-center gap-2">
                       <FileSpreadsheet className="size-4 text-gov-green" />
                       <span className="min-w-0 flex-1 text-sm font-semibold">{name}</span>
-                      <Button size="sm" variant="outline" onClick={() => window.print()}>
-                        Print
+                      <Button size="sm" variant="outline" onClick={() => viewIssueDetailReport()}>
+                        <Eye className="size-3.5" /> View
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={downloadIssueDetailPdf}>
+                        PDF
                       </Button>
                     </div>
                     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                       {ISSUE_REPORT_OPTIONS.map((issue) => (
-                        <Button key={issue} size="sm" variant="outline" className="justify-start" onClick={() => downloadIssueDetailReport(issue)}>
-                          {issue}
-                        </Button>
+                        <div key={issue} className="flex gap-2 rounded-md border border-border p-2">
+                          <span className="min-w-0 flex-1 self-center text-xs font-medium">{issue}</span>
+                          <Button size="sm" variant="outline" onClick={() => viewIssueDetailReport(issue)}>
+                            <Eye className="size-3.5" /> View
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => downloadIssueDetailReport(issue)}>
+                            <Download className="size-3.5" /> Excel
+                          </Button>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -462,8 +527,23 @@ function SinglePageDashboard() {
                     <FileSpreadsheet className="size-4 text-gov-green" />
                     <span className="min-w-0 flex-1 text-sm font-semibold">{name}</span>
                     {name === "Project Wise Report" ? (
+                      <Button size="sm" variant="outline" onClick={viewProjectReport}>
+                        <Eye className="size-3.5" /> View
+                      </Button>
+                    ) : null}
+                    {name === "Project Wise Report" ? (
                       <Button size="sm" variant="outline" onClick={downloadProjectReport}>
                         Excel
+                      </Button>
+                    ) : null}
+                    {name === "Project Wise Report" ? (
+                      <Button size="sm" variant="outline" onClick={downloadProjectPdf}>
+                        PDF
+                      </Button>
+                    ) : null}
+                    {name === "Block Wise Report" ? (
+                      <Button size="sm" variant="outline" onClick={viewBlockReport}>
+                        <Eye className="size-3.5" /> View
                       </Button>
                     ) : null}
                     {name === "Block Wise Report" ? (
@@ -471,21 +551,31 @@ function SinglePageDashboard() {
                         Excel
                       </Button>
                     ) : null}
+                    {name === "Block Wise Report" ? (
+                      <Button size="sm" variant="outline" onClick={downloadBlockPdf}>
+                        PDF
+                      </Button>
+                    ) : null}
+                    {name === "GP Report" ? (
+                      <Button size="sm" variant="outline" onClick={viewGpReport}>
+                        <Eye className="size-3.5" /> View
+                      </Button>
+                    ) : null}
                     {name === "GP Report" ? (
                       <Button size="sm" variant="outline" onClick={downloadGpReport}>
                         Excel
                       </Button>
                     ) : null}
-                    <Button size="sm" variant="outline" onClick={() => window.print()}>
-                      Print
-                    </Button>
+                    {name === "GP Report" ? (
+                      <Button size="sm" variant="outline" onClick={downloadGpPdf}>
+                        PDF
+                      </Button>
+                    ) : null}
                   </div>
                 )}
               </div>
             ))}
-            <Button className="mt-2" onClick={() => window.print()}>
-              <Printer className="size-4" /> Print current view
-            </Button>
+            <ReportPreview report={preview} />
           </div>
         </Panel>
       </section>

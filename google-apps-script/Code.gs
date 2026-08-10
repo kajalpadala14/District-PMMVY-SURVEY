@@ -1,6 +1,8 @@
 const CONFIG = {
   SHEET_NAME: "SURVEY",
   TIMELINE_SHEET_NAME: "TIMELINE",
+  CACHE_SECONDS: 600,
+  CACHE_CHUNK_SIZE: 90000,
   DEFAULT_DISTRICT: "",
   DEFAULT_STATE: "",
 };
@@ -20,6 +22,7 @@ const PROJECT_ALIASES = {
 function doGet(e) {
   try {
     const action = String((e.parameter && e.parameter.action) || "beneficiaries");
+    const refresh = String((e.parameter && e.parameter.refresh) || "") === "1";
 
     if (action === "meta") {
       return jsonResponse({
@@ -49,15 +52,23 @@ function doGet(e) {
       });
     }
 
+    if (action === "beneficiaries" && !refresh) {
+      const cached = getLargeCache_("beneficiaries");
+      if (cached) return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JSON);
+    }
+
     const beneficiaries = getBeneficiaries_();
-    return jsonResponse({
+    const responseText = JSON.stringify({
       ok: true,
       data: beneficiaries,
       meta: {
         count: beneficiaries.length,
+        cached: false,
         asOf: Utilities.formatDate(new Date(), "Asia/Kolkata", "dd MMM yyyy, HH:mm 'IST'"),
       },
     });
+    putLargeCache_("beneficiaries", responseText, CONFIG.CACHE_SECONDS);
+    return ContentService.createTextOutput(responseText).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return jsonResponse({
       ok: false,
@@ -71,6 +82,7 @@ function doPost(e) {
     const body = JSON.parse((e.postData && e.postData.contents) || "{}");
 
     if (body.action === "updateSurvey") {
+      clearLargeCache_("beneficiaries");
       return jsonResponse({
         ok: true,
         data: updateSurvey_(body),
@@ -110,9 +122,6 @@ function getBeneficiaries_() {
       const gp = getCell_(row, headers, ["GRAM PANCHAYAT", "GP"]);
       const village = getCell_(row, headers, ["VILLAGE"]);
       const name = getCell_(row, headers, ["MEMBER", "NAME", "BENEFICIARY NAME"]);
-      const age = getCell_(row, headers, ["AGE"]);
-      const gender = getCell_(row, headers, ["GENDER"]);
-      const guardian = getCell_(row, headers, ["FATHER'S/HUSBAND'S NAME", "FATHERS/HUSBANDS NAME", "GUARDIAN"]);
       const remark = getCell_(row, headers, ["REMARK", "REMARKS"]);
       const pendingReasonText = getCell_(row, headers, ["PENDING REASON", "PENDING REASONS"]);
       const reasons = unique_(getReasons_(row, headers).concat(parseReasons_(pendingReasonText)));
@@ -132,18 +141,13 @@ function getBeneficiaries_() {
       return {
         id: "BEN" + pad_(serial, 5),
         appId: "MVY/" + String(block).slice(0, 3).toUpperCase() + "/" + pad_(serial, 5),
-        serialNo: serial,
         project: project,
         name: name,
-        age: age,
-        gender: gender,
-        guardian: guardian,
         mobile: getCell_(row, headers, ["MOBILE", "MOBILE NO", "PHONE"]) || "",
         aadhaar: maskAadhaar_(getCell_(row, headers, ["AADHAAR", "AADHAR", "AADHAAR NO"])),
         village: village,
         gp: gp,
         block: stripHindi_(block),
-        rawBlock: block,
         reason: primaryReason,
         reasons: reasons,
         caseStatus: savedCaseStatus || "Pending",
@@ -565,4 +569,57 @@ function pad_(value, length) {
 function jsonResponse(payload) {
   return ContentService.createTextOutput(JSON.stringify(payload))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function getLargeCache_(key) {
+  const cache = CacheService.getScriptCache();
+  const metaText = cache.get(key + ":meta");
+  if (!metaText) return "";
+
+  try {
+    const meta = JSON.parse(metaText);
+    const chunkKeys = [];
+    for (let i = 0; i < meta.chunks; i += 1) {
+      chunkKeys.push(key + ":" + i);
+    }
+    const chunks = cache.getAll(chunkKeys);
+    const text = chunkKeys.map(function (chunkKey) {
+      return chunks[chunkKey] || "";
+    }).join("");
+    return text.length === meta.length ? text : "";
+  } catch (err) {
+    return "";
+  }
+}
+
+function putLargeCache_(key, text, seconds) {
+  const cache = CacheService.getScriptCache();
+  const chunks = {};
+  const chunkCount = Math.ceil(text.length / CONFIG.CACHE_CHUNK_SIZE);
+  for (let i = 0; i < chunkCount; i += 1) {
+    chunks[key + ":" + i] = text.slice(i * CONFIG.CACHE_CHUNK_SIZE, (i + 1) * CONFIG.CACHE_CHUNK_SIZE);
+  }
+  chunks[key + ":meta"] = JSON.stringify({
+    chunks: chunkCount,
+    length: text.length,
+    cachedAt: Utilities.formatDate(new Date(), "Asia/Kolkata", "dd MMM yyyy, HH:mm 'IST'"),
+  });
+  cache.putAll(chunks, seconds);
+}
+
+function clearLargeCache_(key) {
+  const cache = CacheService.getScriptCache();
+  const metaText = cache.get(key + ":meta");
+  if (!metaText) return;
+
+  try {
+    const meta = JSON.parse(metaText);
+    const keys = [key + ":meta"];
+    for (let i = 0; i < meta.chunks; i += 1) {
+      keys.push(key + ":" + i);
+    }
+    cache.removeAll(keys);
+  } catch (err) {
+    cache.remove(key + ":meta");
+  }
 }

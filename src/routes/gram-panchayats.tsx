@@ -11,12 +11,12 @@ import { useState } from "react";
 export const Route = createFileRoute("/gram-panchayats")({
   head: () => ({
     meta: [
-      { title: "Gram Panchayat Monitoring | MVY District Command Centre" },
+      { title: "Gram Panchayat Monitoring | MVY - SURVEY Portal" },
       {
         name: "description",
         content: "GP-wise pending beneficiaries, issue break-up, survey completion and high priority cases.",
       },
-      { property: "og:title", content: "Gram Panchayat Monitoring | MVY District Command Centre" },
+      { property: "og:title", content: "Gram Panchayat Monitoring | MVY - SURVEY Portal" },
       { property: "og:description", content: "GP-level pending load, survey completion and intervention priority." },
     ],
   }),

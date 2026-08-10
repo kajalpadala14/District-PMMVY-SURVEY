@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { fetchSheetGet } from "@/lib/sheet-api";
 
 interface TimelineItem {
   date: string;
@@ -88,9 +89,8 @@ function Detail() {
       setTimelineError(null);
       try {
         const params = new URLSearchParams({ action: "timeline", id: beneficiaryId });
-        const response = await fetch(`/api/sheet?${params.toString()}`);
-        const payload = await response.json();
-        if (!response.ok || !payload.ok || !Array.isArray(payload.data)) {
+        const payload = await fetchSheetGet<TimelineItem[]>(params);
+        if (!payload.ok || !Array.isArray(payload.data)) {
           throw new Error(payload.error || "Unable to load timeline.");
         }
         setTimelineItems(payload.data.filter(hasTimelineContent));
