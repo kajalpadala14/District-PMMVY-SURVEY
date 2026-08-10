@@ -82,19 +82,64 @@ export function VBar({
   );
 }
 
-export function ReasonPie({ data, height = 250 }: { data: { reason: string; count: number }[]; height?: number }) {
+export function ReasonPie({
+  data,
+  height = 250,
+  onSelect,
+}: {
+  data: { reason: string; count: number; filterValue?: string }[];
+  height?: number;
+  onSelect?: (reason: string) => void;
+}) {
+  const visibleData = data.filter((item) => item.count > 0);
+  const total = visibleData.reduce((sum, item) => sum + item.count, 0);
+
+  if (!total) {
+    return (
+      <div className="flex items-center justify-center text-center text-sm text-muted-foreground" style={{ height }}>
+        No pending reason data available
+      </div>
+    );
+  }
+
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <PieChart>
-        <Pie data={data} dataKey="count" nameKey="reason" innerRadius={0} outerRadius={78} animationDuration={700}>
-          {data.map((_, i) => (
-            <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
-          ))}
-        </Pie>
-        <Legend wrapperStyle={{ fontSize: 11 }} />
-        <Tooltip {...tooltipStyle} />
-      </PieChart>
-    </ResponsiveContainer>
+    <div className="grid gap-2" style={{ minHeight: height }}>
+      <ResponsiveContainer width="100%" height={Math.max(170, height - 72)}>
+        <PieChart>
+          <Pie
+            data={visibleData}
+            dataKey="count"
+            nameKey="reason"
+            innerRadius={44}
+            outerRadius={78}
+            paddingAngle={2}
+            animationDuration={700}
+            onClick={(item) => onSelect?.(String(item.filterValue || item.reason))}
+            className={onSelect ? "cursor-pointer" : undefined}
+          >
+            {visibleData.map((_, i) => (
+              <Cell key={i} fill={PALETTE[i % PALETTE.length]} />
+            ))}
+          </Pie>
+          <Tooltip {...tooltipStyle} />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="grid gap-1 px-2 text-[11px] text-muted-foreground sm:grid-cols-2">
+        {visibleData.map((item, i) => (
+          <button
+            key={item.reason}
+            type="button"
+            className="flex min-w-0 items-center gap-2 rounded-sm text-left hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            onClick={() => onSelect?.(item.filterValue || item.reason)}
+            disabled={!onSelect}
+          >
+            <span className="size-2.5 shrink-0 rounded-full" style={{ background: PALETTE[i % PALETTE.length] }} />
+            <span className="min-w-0 flex-1 truncate">{item.reason}</span>
+            <span className="num font-semibold text-foreground">{item.count}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

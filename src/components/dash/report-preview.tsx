@@ -10,17 +10,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { downloadExcelReport } from "@/lib/export-excel";
 import { downloadPdfReport } from "@/lib/export-pdf";
 
 export type ReportPreviewData = {
   title: string;
   filename: string;
+  format?: "excel" | "pdf";
   headers: string[];
   rows: (string | number | null | undefined)[][];
 };
 
 export function ReportPreview({ report, onClose }: { report: ReportPreviewData | null; onClose: () => void }) {
   const open = Boolean(report);
+  const format = report?.format ?? "pdf";
+  const formatLabel = format === "excel" ? "Excel" : "PDF";
 
   return (
     <Dialog open={open} onOpenChange={(next) => (!next ? onClose() : null)}>
@@ -31,7 +35,7 @@ export function ReportPreview({ report, onClose }: { report: ReportPreviewData |
               <div className="flex items-start justify-between gap-3 pr-8">
                 <div>
                   <DialogTitle className="text-base">{report.title}</DialogTitle>
-                  <DialogDescription className="text-xs">PDF download se pehle data preview</DialogDescription>
+                  <DialogDescription className="text-xs">{formatLabel} download se pehle data preview</DialogDescription>
                 </div>
                 <Badge variant="secondary" className="num shrink-0">
                   {report.rows.length.toLocaleString("en-IN")} rows
@@ -72,13 +76,19 @@ export function ReportPreview({ report, onClose }: { report: ReportPreviewData |
             </div>
             <DialogFooter className="items-center justify-between gap-2 border-t border-border px-4 py-3 sm:flex-row">
               <p className="text-[11px] text-muted-foreground">
-                {report.rows.length > 300 ? "Showing first 300 rows here. PDF includes full report." : "PDF will include the rows shown here."}
+                {report.rows.length > 300
+                  ? `Showing first 300 rows here. ${formatLabel} includes full report.`
+                  : `${formatLabel} will include the rows shown here.`}
               </p>
               <Button
                 size="sm"
-                onClick={() => downloadPdfReport(report.filename, report.title, report.headers, report.rows)}
+                onClick={() =>
+                  format === "excel"
+                    ? downloadExcelReport(report.filename, report.title, report.headers, report.rows)
+                    : downloadPdfReport(report.filename, report.title, report.headers, report.rows)
+                }
               >
-                <Download className="size-3.5" /> Final Download PDF
+                <Download className="size-3.5" /> Final Download {formatLabel}
               </Button>
             </DialogFooter>
           </>

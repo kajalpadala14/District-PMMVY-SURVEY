@@ -4,13 +4,13 @@ import { useMemo, useState } from "react";
 import { FilterPanel } from "@/components/dash/filter-panel";
 import { useFilters } from "@/components/dash/filters-context";
 import { Panel, PageTitle } from "@/components/dash/panel";
+import { PortalNavCard } from "@/components/dash/portal-nav-card";
 import { ReportPreview, type ReportPreviewData } from "@/components/dash/report-preview";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { REGISTRATION_ISSUES } from "@/data/district";
 import { blockStats, gpStats, projectStats } from "@/data/district";
-import { downloadExcelReport } from "@/lib/export-excel";
 import { beneficiaryHasIssue, ISSUE_DETAIL_HEADERS, ISSUE_REPORT_OPTIONS, issueDetailRows } from "@/lib/issue-report";
 
 export const Route = createFileRoute("/reports")({
@@ -76,7 +76,7 @@ function Reports() {
   const downloadProjectReport = () => {
     const headers = ["Project", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Score"];
     const reportRows = projects.map((p) => [p.project, p.total, p.pending, p.completed, p.resolved, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other, p.score]);
-    downloadExcelReport("mvy-project-wise-report.xls", "Project Wise Report", headers, reportRows);
+    setPreview({ title: "Project Wise Report", filename: "mvy-project-wise-report.xls", format: "excel", headers, rows: reportRows });
   };
   const viewProjectReport = () => {
     const headers = ["Project", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Score"];
@@ -92,7 +92,7 @@ function Reports() {
   const downloadBlockReport = () => {
     const headers = ["Block", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers", "Score"];
     const reportRows = blocks.map((b) => [b.block, b.total, b.pending, b.completed, b.resolved, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers, b.score]);
-    downloadExcelReport("mvy-block-wise-report.xls", "Block Wise Report", headers, reportRows);
+    setPreview({ title: "Block Wise Report", filename: "mvy-block-wise-report.xls", format: "excel", headers, rows: reportRows });
   };
   const viewBlockReport = () => {
     const headers = ["Block", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers", "Score"];
@@ -108,7 +108,7 @@ function Reports() {
   const downloadGpReport = () => {
     const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
     const reportRows = gps.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
-    downloadExcelReport("mvy-gp-wise-report.xls", "GP Wise Report", headers, reportRows);
+    setPreview({ title: "GP Wise Report", filename: "mvy-gp-wise-report.xls", format: "excel", headers, rows: reportRows });
   };
   const viewGpReport = () => {
     const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
@@ -122,12 +122,13 @@ function Reports() {
   };
 
   const downloadIssueDetailReport = (issue: string) => {
-    downloadExcelReport(
-      `mvy-${slugify(issue)}-issue-detail-report.xls`,
-      `${issue} Issue Detail Report`,
-      ISSUE_DETAIL_HEADERS,
-      issueDetailRows(rows, issue),
-    );
+    setPreview({
+      title: `${issue} Issue Detail Report`,
+      filename: `mvy-${slugify(issue)}-issue-detail-report.xls`,
+      format: "excel",
+      headers: ISSUE_DETAIL_HEADERS,
+      rows: issueDetailRows(rows, issue),
+    });
   };
   const viewIssueDetailReport = (issue?: string) => {
     setPreview({
@@ -143,12 +144,13 @@ function Reports() {
 
   const downloadCustomReport = () => {
     const suffix = [customBlock, customGp, customVillage, customIssue].filter(Boolean).map(slugify).join("-");
-    downloadExcelReport(
-      `mvy-custom-filtered-report${suffix ? `-${suffix}` : ""}.xls`,
-      "Custom Filtered Report",
-      ISSUE_DETAIL_HEADERS,
-      issueDetailRows(customRows, customIssue || undefined),
-    );
+    setPreview({
+      title: "Custom Filtered Report",
+      filename: `mvy-custom-filtered-report${suffix ? `-${suffix}` : ""}.xls`,
+      format: "excel",
+      headers: ISSUE_DETAIL_HEADERS,
+      rows: issueDetailRows(customRows, customIssue || undefined),
+    });
   };
   const viewCustomReport = () => {
     setPreview({
@@ -182,6 +184,7 @@ function Reports() {
 
   return (
     <>
+      <PortalNavCard />
       <PageTitle title="Reports & Export" subtitle="Every report honours the filters currently applied on the dashboard" />
       <FilterPanel />
 

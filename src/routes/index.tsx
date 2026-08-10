@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  BadgeCheck,
   CheckCircle2,
   ClipboardList,
   Download,
@@ -18,13 +17,12 @@ import { KpiCard } from "@/components/dash/kpi-card";
 import { Bar, Panel, StatusPill } from "@/components/dash/panel";
 import { ReportPreview, type ReportPreviewData } from "@/components/dash/report-preview";
 import { LazyChart } from "@/components/dash/lazy-charts";
-import { blockStats, gpStats, kpis, projectStats, reasonStats } from "@/data/district";
+import { blockStats, formatBeneficiaryReasons, gpStats, kpis, projectStats, reasonStats } from "@/data/district";
 import { REGISTRATION_ISSUES } from "@/data/district";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { downloadExcelReport } from "@/lib/export-excel";
 import { beneficiaryHasIssue, ISSUE_DETAIL_HEADERS, ISSUE_REPORT_OPTIONS, issueDetailRows } from "@/lib/issue-report";
 import { cn } from "@/lib/utils";
 
@@ -91,7 +89,7 @@ function SinglePageDashboard() {
   const downloadProjectReport = () => {
     const headers = ["Project", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Score"];
     const reportRows = ps.map((p) => [p.project, p.total, p.pending, p.completed, p.resolved, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other, p.score]);
-    downloadExcelReport("mvy-project-wise-report.xls", "Project Wise Report", headers, reportRows);
+    setPreview({ title: "Project Wise Report", filename: "mvy-project-wise-report.xls", format: "excel", headers, rows: reportRows });
   };
   const viewProjectReport = () => {
     const headers = ["Project", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Score"];
@@ -106,7 +104,7 @@ function SinglePageDashboard() {
   const downloadBlockReport = () => {
     const headers = ["Block", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers", "Score"];
     const reportRows = bs.map((b) => [b.block, b.total, b.pending, b.completed, b.resolved, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers, b.score]);
-    downloadExcelReport("mvy-block-wise-report.xls", "Block Wise Report", headers, reportRows);
+    setPreview({ title: "Block Wise Report", filename: "mvy-block-wise-report.xls", format: "excel", headers, rows: reportRows });
   };
   const viewBlockReport = () => {
     const headers = ["Block", "Total", "Pending", "Survey Done", "Resolved", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers", "Score"];
@@ -121,7 +119,7 @@ function SinglePageDashboard() {
   const downloadGpReport = () => {
     const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
     const reportRows = gs.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
-    downloadExcelReport("mvy-gp-wise-report.xls", "GP Wise Report", headers, reportRows);
+    setPreview({ title: "GP Wise Report", filename: "mvy-gp-wise-report.xls", format: "excel", headers, rows: reportRows });
   };
   const viewGpReport = () => {
     const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
@@ -134,12 +132,13 @@ function SinglePageDashboard() {
     setPreview({ title: "GP Wise Report", filename: "mvy-gp-wise-report.pdf", headers, rows: reportRows });
   };
   const downloadIssueDetailReport = (issue: string) => {
-    downloadExcelReport(
-      `mvy-${slugify(issue)}-issue-detail-report.xls`,
-      `${issue} Issue Detail Report`,
-      ISSUE_DETAIL_HEADERS,
-      issueDetailRows(rows, issue),
-    );
+    setPreview({
+      title: `${issue} Issue Detail Report`,
+      filename: `mvy-${slugify(issue)}-issue-detail-report.xls`,
+      format: "excel",
+      headers: ISSUE_DETAIL_HEADERS,
+      rows: issueDetailRows(rows, issue),
+    });
   };
   const viewIssueDetailReport = (issue?: string) => {
     setPreview({
@@ -154,12 +153,13 @@ function SinglePageDashboard() {
   };
   const downloadCustomReport = () => {
     const suffix = [customBlock, customGp, customVillage, customIssue].filter(Boolean).map(slugify).join("-");
-    downloadExcelReport(
-      `mvy-custom-filtered-report${suffix ? `-${suffix}` : ""}.xls`,
-      "Custom Filtered Report",
-      ISSUE_DETAIL_HEADERS,
-      issueDetailRows(customRows, customIssue || undefined),
-    );
+    setPreview({
+      title: "Custom Filtered Report",
+      filename: `mvy-custom-filtered-report${suffix ? `-${suffix}` : ""}.xls`,
+      format: "excel",
+      headers: ISSUE_DETAIL_HEADERS,
+      rows: issueDetailRows(customRows, customIssue || undefined),
+    });
   };
   const viewCustomReport = () => {
     setPreview({
@@ -224,12 +224,11 @@ function SinglePageDashboard() {
 
       <TabsContent value="dashboard" className="mt-0 space-y-4">
         <section id="overview" className="scroll-mt-32 space-y-4">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 xl:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <KpiCard label="Total Beneficiaries" value={k.total.toLocaleString("en-IN")} icon={Users} tone="navy" />
           <KpiCard label="Survey Completed" value={k.surveyDone.toLocaleString("en-IN")} icon={CheckCircle2} tone="green" />
+          <KpiCard label="Survey In Progress" value={k.surveyInProgress.toLocaleString("en-IN")} icon={ClipboardList} tone="navy" />
           <KpiCard label="Survey Pending" value={k.surveyPending.toLocaleString("en-IN")} icon={ClipboardList} tone="amber" />
-          <KpiCard label="Resolved Cases" value={k.resolved.toLocaleString("en-IN")} icon={BadgeCheck} tone="green" />
-          <KpiCard label="Pending Cases" value={k.pending.toLocaleString("en-IN")} icon={ClipboardList} tone="red" />
         </div>
 
         <div className="grid gap-3 xl:grid-cols-3">
@@ -240,7 +239,7 @@ function SinglePageDashboard() {
             <LazyChart kind="ProgressDonut" done={k.surveyDone} pending={k.surveyPending} height={250} />
           </Panel>
           <Panel title="Pending Reason Distribution" subtitle="Why payments are stuck">
-            <LazyChart kind="ReasonPie" data={reasonStats(rows)} height={250} />
+            <LazyChart kind="ReasonPie" data={reasonStats(rows)} height={250} onSelect={(reason) => setFilter("reason", reason)} />
           </Panel>
         </div>
       </section>
@@ -411,7 +410,7 @@ function SinglePageDashboard() {
                     <td className="px-2 py-2 font-semibold">{b.name}</td>
                     <td className="px-2 py-2">{b.village}</td>
                     <td className="px-2 py-2">{b.gp}</td>
-                    <td className="px-2 py-2">{b.reason}</td>
+                    <td className="px-2 py-2">{formatBeneficiaryReasons(b)}</td>
                     <td className="px-2 py-2"><StatusBadge value={b.surveyStatus} good="Completed" /></td>
                     <td className="px-2 py-2"><StatusBadge value={b.caseStatus} good="Resolved" /></td>
                     <td className={cn("num px-2 py-2", b.pendingDays >= 30 && "font-semibold text-gov-red")}>

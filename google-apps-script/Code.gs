@@ -53,7 +53,7 @@ function doGet(e) {
     }
 
     if (action === "beneficiaries" && !refresh) {
-      const cached = getLargeCache_("beneficiaries");
+      const cached = getLargeCache_("beneficiaries:v3");
       if (cached) return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -67,7 +67,7 @@ function doGet(e) {
         asOf: Utilities.formatDate(new Date(), "Asia/Kolkata", "dd MMM yyyy, HH:mm 'IST'"),
       },
     });
-    putLargeCache_("beneficiaries", responseText, CONFIG.CACHE_SECONDS);
+    putLargeCache_("beneficiaries:v3", responseText, CONFIG.CACHE_SECONDS);
     return ContentService.createTextOutput(responseText).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return jsonResponse({
@@ -82,7 +82,7 @@ function doPost(e) {
     const body = JSON.parse((e.postData && e.postData.contents) || "{}");
 
     if (body.action === "updateSurvey") {
-      clearLargeCache_("beneficiaries");
+      clearLargeCache_("beneficiaries:v3");
       return jsonResponse({
         ok: true,
         data: updateSurvey_(body),
@@ -123,15 +123,15 @@ function getBeneficiaries_() {
       const village = getCell_(row, headers, ["VILLAGE"]);
       const name = getCell_(row, headers, ["MEMBER", "NAME", "BENEFICIARY NAME"]);
       const remark = getCell_(row, headers, ["REMARK", "REMARKS"]);
-      const pendingReasonText = getCell_(row, headers, ["PENDING REASON", "PENDING REASONS"]);
-      const reasons = unique_(getReasons_(row, headers).concat(parseReasons_(pendingReasonText)));
-      const primaryReason = reasons[0] || "";
       const savedSurveyStatus = getCell_(row, headers, ["SURVEY STATUS"]);
       const savedCaseStatus = getCell_(row, headers, ["CASE STATUS"]);
       const registrationStatus = getCell_(row, headers, ["REGISTRATION STATUS", "BENEFICIARY REGISTERED"]);
       const reasonKnown = getCell_(row, headers, ["REASON KNOWN"]);
       const registrationReason = getCell_(row, headers, ["REGISTRATION REASON", "REASON"]);
       const selectedIssue = getCell_(row, headers, ["ISSUE SELECTED", "ISSUE"]);
+      const pendingReasonText = getCell_(row, headers, ["PENDING REASON", "PENDING REASONS"]);
+      const reasons = unique_(getReasons_(row, headers).concat(parseReasons_(pendingReasonText)).concat(parseReasons_(selectedIssue)));
+      const primaryReason = reasons[0] || "";
       const hasRegistrationWorkflow = Boolean(registrationStatus || reasonKnown || registrationReason || selectedIssue);
       const surveyStatus =
         savedSurveyStatus && (savedSurveyStatus !== "Completed" || hasRegistrationWorkflow || savedCaseStatus === "Resolved")
@@ -419,13 +419,8 @@ function getSheet_() {
 }
 
 function getReasons_(row, headers) {
-  const hasNoIssueValue = ISSUE_COLUMNS.some(function (issue) {
-    return isNo_(getCell_(row, headers, [issue.header]));
-  });
-
   return ISSUE_COLUMNS.filter(function (issue) {
-    const value = getCell_(row, headers, [issue.header]);
-    return hasNoIssueValue ? isNo_(value) : isMarked_(value);
+    return isNo_(getCell_(row, headers, [issue.header]));
   }).map(function (issue) {
     return issue.reason;
   });
@@ -447,6 +442,9 @@ function normalizeReasons_(value) {
     input
       .map(function (item) {
         const text = String(item || "").trim().toUpperCase();
+        if (text === "DOCUMENT MISSING" || text === "DOCUMENTS PENDING" || text === "OTHER") {
+          return "Other / Document";
+        }
         const match = ISSUE_COLUMNS.find(function (issue) {
           return issue.reason.toUpperCase() === text || issue.header.toUpperCase() === text;
         });
@@ -467,13 +465,9 @@ function unique_(values) {
 
 function getIssueFlags_(row, headers) {
   const flags = {};
-  const hasNoIssueValue = ISSUE_COLUMNS.some(function (issue) {
-    return isNo_(getCell_(row, headers, [issue.header]));
-  });
 
   ISSUE_COLUMNS.forEach(function (issue) {
-    const value = getCell_(row, headers, [issue.header]);
-    flags[issue.reason] = hasNoIssueValue ? isNo_(value) : isMarked_(value);
+    flags[issue.reason] = isNo_(getCell_(row, headers, [issue.header]));
   });
   return flags;
 }

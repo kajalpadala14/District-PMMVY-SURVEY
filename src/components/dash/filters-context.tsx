@@ -7,7 +7,7 @@ import {
 } from "@/data/district";
 import { fetchSheetGet, fetchSheetPost, isSheetApiConfigured } from "@/lib/sheet-api";
 
-const SHEET_ROWS_CACHE_KEY = "mvy.sheet.rows.v1";
+const SHEET_ROWS_CACHE_KEY = "mvy.sheet.rows.v3";
 
 interface Ctx {
   filters: Filters;
@@ -134,7 +134,10 @@ export function useFilters() {
 function normalizeBeneficiarySurveyStatus(row: Beneficiary): Beneficiary {
   const project = normalizeProjectName(row.project);
   const hasRegistrationWorkflow = Boolean(row.registrationStatus || row.reasonKnown || row.registrationReason || row.issue);
-  const normalized = project !== row.project ? { ...row, project } : row;
+  const normalized = {
+    ...row,
+    project,
+  };
   if (row.surveyStatus === "Completed" && !hasRegistrationWorkflow && row.caseStatus !== "Resolved") {
     return { ...normalized, surveyStatus: "Pending" };
   }

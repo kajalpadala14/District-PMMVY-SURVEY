@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { DANTEWADA_GRAM_PANCHAYATS } from "@/data/dantewada-gps";
-import { PENDING_REASONS } from "@/data/district";
+import { getPendingReasonLabel, PENDING_REASONS } from "@/data/district";
 import { useFilters } from "./filters-context";
 
 const ALL = "__all__";
@@ -56,13 +56,13 @@ export function FilterPanel() {
         <Picker
           label="Pending Reason"
           value={filters.reason}
-          options={[...PENDING_REASONS]}
+          options={PENDING_REASONS.map((reason) => ({ label: getPendingReasonLabel(reason), value: reason }))}
           onChange={(v) => setFilter("reason", v)}
         />
         <Picker
           label="Survey Status"
           value={filters.survey}
-          options={["Completed", "Pending"]}
+          options={["Completed", "In Progress", "Reason Pending", "Pending"]}
           onChange={(v) => setFilter("survey", v)}
         />
       </div>
@@ -97,7 +97,7 @@ function Picker({
 }: {
   label: string;
   value: string | undefined;
-  options: string[];
+  options: (string | { label: string; value: string })[];
   onChange: (v: string) => void;
 }) {
   const hasValue = Boolean(value);
@@ -115,11 +115,14 @@ function Picker({
         </SelectTrigger>
         <SelectContent className="max-h-72">
           <SelectItem value={ALL}>All {label}</SelectItem>
-          {options.map((o) => (
-            <SelectItem key={o} value={o}>
-              {o}
-            </SelectItem>
-          ))}
+          {options.map((o) => {
+            const option = typeof o === "string" ? { label: o, value: o } : o;
+            return (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            );
+          })}
         </SelectContent>
       </Select>
     </label>

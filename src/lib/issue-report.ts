@@ -1,4 +1,4 @@
-import { REGISTRATION_ISSUES, type Beneficiary } from "@/data/district";
+import { beneficiaryMatchesReason, formatBeneficiaryReasons, REGISTRATION_ISSUES, type Beneficiary } from "@/data/district";
 
 export const ISSUE_REPORT_OPTIONS = [...REGISTRATION_ISSUES];
 
@@ -38,7 +38,7 @@ export function issueDetailRows(rows: Beneficiary[], issue?: string) {
     row.mobile,
     row.aadhaar,
     getIssueText(row),
-    row.reason,
+    formatBeneficiaryReasons(row),
     row.reasons?.join(", ") ?? "",
     row.registrationStatus ?? "",
     row.reasonKnown ?? "",
@@ -75,6 +75,5 @@ export function beneficiaryHasIssue(row: Beneficiary, issue: string) {
   if (selectedIssues.includes(issue)) return true;
   if (row.issueFlags?.[issue]) return true;
 
-  const pendingReason = issue === "Document Missing" || issue === "Other" ? "Other / Document" : issue;
-  return row.reason === pendingReason || Boolean(row.reasons?.includes(pendingReason));
+  return beneficiaryMatchesReason(row, issue);
 }

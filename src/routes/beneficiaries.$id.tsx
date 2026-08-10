@@ -4,7 +4,7 @@ import { ArrowLeft, Check, ChevronsUpDown, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useFilters } from "@/components/dash/filters-context";
 import { Panel, PageTitle } from "@/components/dash/panel";
-import { REGISTRATION_ISSUES } from "@/data/district";
+import { formatBeneficiaryReasons, REGISTRATION_ISSUES } from "@/data/district";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -66,12 +66,10 @@ function Detail() {
 
   useEffect(() => {
     const savedRegistrationStatus = row?.registrationStatus === "Yes" || row?.registrationStatus === "No" ? row.registrationStatus : "";
-    const inferredRegistrationStatus =
-      savedRegistrationStatus || (row?.surveyStatus === "In Progress" ? "Yes" : row?.surveyStatus === "Reason Pending" || row?.issue ? "No" : "");
     const savedReasonKnown = row?.reasonKnown === "Yes" || row?.reasonKnown === "No" ? row.reasonKnown : "";
 
-    setRegistrationStatus(inferredRegistrationStatus);
-    setReasonKnown(savedReasonKnown || (inferredRegistrationStatus === "No" && row?.issue ? "Yes" : ""));
+    setRegistrationStatus(savedRegistrationStatus);
+    setReasonKnown(savedReasonKnown || (savedRegistrationStatus === "No" && row?.issue ? "Yes" : ""));
     setIssues(parseSavedIssues(row?.issue));
     setSurveyDate(row?.lastSurvey ?? new Date().toISOString().slice(0, 10));
     setRemark(row?.remark ?? "");
@@ -218,7 +216,7 @@ function Detail() {
             <Field label="Village" value={row.village} />
             <Field label="Gram Panchayat" value={row.gp} />
             <Field label="Block" value={row.block} />
-            <Field label="Pending Reason" value={row.reason} />
+            <Field label="Pending Reason" value={formatBeneficiaryReasons(row)} />
             <Field label="Pending Since" value={`${row.pendingDays} days`} />
             <Field label="Priority" value={row.priority} />
           </dl>

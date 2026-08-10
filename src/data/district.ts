@@ -9,6 +9,14 @@ export const PENDING_REASONS = [
 ] as const;
 export type PendingReason = (typeof PENDING_REASONS)[number];
 
+export const PENDING_REASON_LABELS: Record<PendingReason, string> = {
+  "MCP Card Missing": "MCP Card Missing",
+  "Bank Account Issue": "Bank Account Issue",
+  "Aadhaar Mismatch": "Aadhaar Mismatch",
+  "Aadhaar-Bank Link": "Aadhaar-Bank Link",
+  "Other / Document": "Other",
+};
+
 export const REGISTRATION_REASONS = [
   "Beneficiary not registered",
   "Aadhaar unavailable",
@@ -110,7 +118,7 @@ export function applyFilters(rows: Beneficiary[], f: Filters) {
       (!f.block || r.block === f.block) &&
       (!f.gp || r.gp === f.gp) &&
       (!f.village || r.village === f.village) &&
-      (!f.reason || r.reason === f.reason || r.reasons?.includes(f.reason)) &&
+      (!f.reason || beneficiaryMatchesReason(r, f.reason)) &&
       (!f.officer || r.officer === f.officer) &&
       (!f.survey || r.surveyStatus === f.survey) &&
       (!f.status || r.caseStatus === f.status) &&
@@ -125,6 +133,33 @@ export function applyFilters(rows: Beneficiary[], f: Filters) {
   );
 }
 
+export function formatBeneficiaryReasons(row: Pick<Beneficiary, "reason" | "reasons">) {
+  const reasons = getBeneficiaryReasons(row);
+  return reasons.length ? reasons.join(", ") : row.reason;
+}
+
+export function getBeneficiaryReasons(row: Pick<Beneficiary, "reason" | "reasons" | "issue" | "issueFlags">) {
+  const values = [
+    ...(row.reasons ?? []),
+    row.reason,
+    row.issue,
+    ...Object.entries(row.issueFlags ?? {})
+      .filter(([, selected]) => selected)
+      .map(([reason]) => reason),
+  ];
+
+  return unique(values.flatMap(parsePendingReasons));
+}
+
+export function getPendingReasonLabel(reason: string) {
+  return PENDING_REASON_LABELS[normalizePendingReason(reason) as PendingReason] ?? reason;
+}
+
+export function beneficiaryMatchesReason(row: Pick<Beneficiary, "reason" | "reasons" | "issue" | "issueFlags">, reason: string) {
+  const normalizedReason = normalizePendingReason(reason);
+  return Boolean(normalizedReason && getBeneficiaryReasons(row).includes(normalizedReason));
+}
+
 export function normalizeProjectName(value?: string) {
   const text = String(value || "").replace(/\s+/g, " ").trim();
   return PROJECT_ALIASES[text.toUpperCase()] || text;
@@ -135,6 +170,8 @@ export function kpis(rows: Beneficiary[]) {
   const pending = rows.filter((r) => r.caseStatus === "Pending");
   const resolved = total - pending.length;
   const surveyDone = rows.filter((r) => r.surveyStatus === "Completed").length;
+  const surveyInProgress = rows.filter((r) => r.surveyStatus === "In Progress").length;
+  const surveyPending = Math.max(0, total - surveyInProgress - surveyDone);
   const over30 = pending.filter((r) => r.pendingDays >= 30).length;
   const over7 = pending.filter((r) => r.pendingDays >= 7).length;
   const high = pending.filter((r) => r.priority === "High").length;
@@ -144,7 +181,8 @@ export function kpis(rows: Beneficiary[]) {
     pending: pending.length,
     resolved,
     surveyDone,
-    surveyPending: total - surveyDone,
+    surveyInProgress,
+    surveyPending,
     issueNoCount,
     surveyProgress: total ? Math.round((surveyDone / total) * 1000) / 10 : 0,
     pendingPct: total ? Math.round((pending.length / total) * 1000) / 10 : 0,
@@ -265,6 +303,8 @@ export function gpStats(rows: Beneficiary[]) {
       const gp = rs.find((r) => r.gp)?.gp ?? master?.gp ?? gpKey;
       const pending = rs.filter((r) => r.caseStatus === "Pending").length;
       const completed = rs.filter((r) => r.surveyStatus === "Completed").length;
+      const inProgress = rs.filter((r) => r.surveyStatus === "In Progress").length;
+      const surveyPending = Math.max(0, rs.length - inProgress - completed);
       return {
         project,
         block,
@@ -273,7 +313,7 @@ export function gpStats(rows: Beneficiary[]) {
         total: rs.length,
         pending,
         completed,
-        surveyPending: rs.length - completed,
+        surveyPending,
         mcp: reasonCount(rs, "MCP Card Missing"),
         bank: reasonCount(rs, "Bank Account Issue"),
         aadhaar: reasonCount(rs, "Aadhaar Mismatch"),
@@ -341,8 +381,9 @@ export function officerStats(rows: Beneficiary[]) {
 
 export function reasonStats(rows: Beneficiary[]) {
   return PENDING_REASONS.map((reason) => ({
-    reason,
-    count: reasonCount(rows.filter((r) => r.caseStatus === "Pending"), reason),
+    filterValue: reason,
+    reason: getPendingReasonLabel(reason),
+    count: reasonCount(rows, reason),
   })).sort((a, b) => b.count - a.count);
 }
 
@@ -375,7 +416,29 @@ export function alerts(rows: Beneficiary[]) {
 }
 
 function reasonCount(rows: Beneficiary[], reason: PendingReason) {
-  return rows.filter((r) => r.issueFlags?.[reason] || r.reason === reason || r.reasons?.includes(reason)).length;
+  return rows.filter((r) => beneficiaryMatchesReason(r, reason)).length;
+}
+
+function parsePendingReasons(value?: string) {
+  return String(value || "")
+    .split(/[,;|]/)
+    .map((item) => normalizePendingReason(item))
+    .filter((item): item is PendingReason => Boolean(item));
+}
+
+function normalizePendingReason(value?: string) {
+  const text = String(value || "").replace(/\s+/g, " ").trim().toUpperCase();
+  if (!text) return "";
+  if (text === "MCP CARD MISSING" || text === "MCP NO") return "MCP Card Missing";
+  if (text === "BANK ACCOUNT ISSUE" || text === "BANK NO") return "Bank Account Issue";
+  if (text === "AADHAAR MISMATCH" || text === "AADHAAR NO" || text === "ADHAAR MISMATCH") return "Aadhaar Mismatch";
+  if (text === "AADHAAR-BANK LINK" || text === "AADHAAR BANK LINK" || text === "ADHAAR-BANK LINK" || text === "ADR-BANK NO") return "Aadhaar-Bank Link";
+  if (text === "OTHER / DOCUMENT" || text === "OTHER" || text === "DOCUMENT MISSING" || text === "DOCUMENTS PENDING") return "Other / Document";
+  return "";
+}
+
+function unique<T>(values: T[]) {
+  return [...new Set(values)];
 }
 
 function groupBy<T>(rows: T[], getKey: (row: T) => string) {
