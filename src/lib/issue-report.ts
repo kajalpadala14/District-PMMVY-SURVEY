@@ -1,55 +1,48 @@
 import { beneficiaryMatchesReason, formatBeneficiaryReasons, REGISTRATION_ISSUES, type Beneficiary } from "@/data/district";
+import { getSurveyStatusLabel } from "@/lib/survey-status";
 
 export const ISSUE_REPORT_OPTIONS = [...REGISTRATION_ISSUES];
 
 export const ISSUE_DETAIL_HEADERS = [
   "Application ID",
-  "Beneficiary ID",
   "Name",
   "Project",
-  "Block",
-  "Gram Panchayat",
-  "Village",
-  "Mobile",
-  "Aadhaar",
-  "Selected Issue",
-  "Pending Reason",
-  "All Reasons",
-  "Registered",
-  "Reason Known",
-  "Survey Status",
-  "Case Status",
-  "Pending Days",
-  "Priority",
-  "Officer",
+  "Location",
+  "Issue",
+  "Registration",
+  "Status",
   "Last Survey",
   "Remark",
 ];
 
 export function issueDetailRows(rows: Beneficiary[], issue?: string) {
-  return rows.filter((row) => hasIssueDetail(row) && (!issue || beneficiaryHasIssue(row, issue))).map((row) => [
-    row.appId,
-    row.id,
-    row.name,
-    row.project ?? "",
-    row.block,
-    row.gp,
-    row.village,
-    row.mobile,
-    row.aadhaar,
-    getIssueText(row),
-    formatBeneficiaryReasons(row),
-    row.reasons?.join(", ") ?? "",
-    row.registrationStatus ?? "",
-    row.reasonKnown ?? "",
-    row.surveyStatus,
-    row.caseStatus,
-    row.pendingDays,
-    row.priority,
-    row.officer,
-    row.lastSurvey ?? "",
-    row.remark ?? "",
-  ]);
+  return rows.filter((row) => hasIssueDetail(row) && (!issue || beneficiaryHasIssue(row, issue))).map((row) => {
+    const selectedIssue = issue || getIssueText(row);
+    return [
+      row.appId,
+      row.name,
+      row.project ?? "",
+      formatLocation(row),
+      selectedIssue || formatBeneficiaryReasons(row),
+      formatRegistration(row),
+      formatStatus(row),
+      row.lastSurvey ?? "",
+      row.remark ?? "",
+    ];
+  });
+}
+
+function formatLocation(row: Pick<Beneficiary, "block" | "gp" | "village">) {
+  return [row.block, row.gp, row.village].filter(Boolean).join(" / ");
+}
+
+function formatRegistration(row: Pick<Beneficiary, "registrationStatus" | "reasonKnown">) {
+  if (row.registrationStatus === "No" && row.reasonKnown) return `No, reason ${row.reasonKnown === "Yes" ? "known" : "pending"}`;
+  return row.registrationStatus || "";
+}
+
+function formatStatus(row: Pick<Beneficiary, "surveyStatus" | "caseStatus">) {
+  return [getSurveyStatusLabel(row.surveyStatus), row.caseStatus].filter(Boolean).join(" + ");
 }
 
 function hasIssueDetail(row: Beneficiary) {
@@ -73,6 +66,7 @@ export function beneficiaryHasIssue(row: Beneficiary, issue: string) {
     .filter(Boolean);
 
   if (selectedIssues.includes(issue)) return true;
+  if (selectedIssues.length && (issue === "Document Missing" || issue === "Other")) return false;
   if (row.issueFlags?.[issue]) return true;
 
   return beneficiaryMatchesReason(row, issue);

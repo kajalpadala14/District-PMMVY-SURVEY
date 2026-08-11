@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { REGISTRATION_ISSUES } from "@/data/district";
-import { blockStats, gpStats, projectStats } from "@/data/district";
+import { blockStats, gpStats, projectStats, villageStats } from "@/data/district";
 import { beneficiaryHasIssue, ISSUE_DETAIL_HEADERS, ISSUE_REPORT_OPTIONS, issueDetailRows } from "@/lib/issue-report";
 
 export const Route = createFileRoute("/reports")({
@@ -19,7 +19,7 @@ export const Route = createFileRoute("/reports")({
       { title: "Reports & Export | MVY - SURVEY Portal" },
       {
         name: "description",
-        content: "Download filter-aware district, GP, pending and resolved reports.",
+        content: "Download filter-aware district, GP, village and issue reports.",
       },
       { property: "og:title", content: "Reports & Export | MVY - SURVEY Portal" },
       { property: "og:description", content: "Filter-aware report views for district review and monitoring." },
@@ -32,9 +32,8 @@ const REPORTS = [
   ["Project Wise Report", "Project level pending load, survey completion and issue break-up"],
   ["Block Wise Report", "Block level pending load, survey completion and issue break-up"],
   ["Gram Panchayat Report", "GP level pending load with high priority cases"],
+  ["Village Wise Report", "Village level pending load, survey completion and issue break-up"],
   ["Issue Detail Report", "Beneficiary-wise issue details with field verification status"],
-  ["Resolved Cases Report", "Closed cases"],
-  ["Survey Progress Report", "Survey completion status from current records"],
 ] as const;
 
 const ALL = "__all__";
@@ -47,6 +46,7 @@ function Reports() {
   const [customIssue, setCustomIssue] = useState("");
   const [preview, setPreview] = useState<ReportPreviewData | null>(null);
   const gps = gpStats(rows);
+  const villages = villageStats(rows);
   const projects = projectStats(rows);
   const blocks = blockStats(rows);
   const customBaseRows = rows.length ? rows : allRows;
@@ -121,6 +121,17 @@ function Reports() {
     setPreview({ title: "GP Wise Report", filename: "mvy-gp-wise-report.pdf", headers, rows: reportRows });
   };
 
+  const downloadVillageReport = () => {
+    const headers = ["Project", "Block", "Gram Panchayat", "Village", "Total", "Pending", "Survey Done", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "High Priority", "Officer", "Last Survey"];
+    const reportRows = villages.map((v) => [v.project, v.block, v.gp, v.village, v.total, v.pending, v.completed, `${v.surveyPct}%`, v.mcp, v.bank, v.aadhaar, v.link, v.other, v.critical, v.officer, v.lastSurvey ?? ""]);
+    setPreview({ title: "Village Wise Report", filename: "mvy-village-wise-report.xls", format: "excel", headers, rows: reportRows });
+  };
+  const downloadVillagePdf = () => {
+    const headers = ["Project", "Block", "Gram Panchayat", "Village", "Total", "Pending", "Survey Done", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "High Priority", "Officer", "Last Survey"];
+    const reportRows = villages.map((v) => [v.project, v.block, v.gp, v.village, v.total, v.pending, v.completed, `${v.surveyPct}%`, v.mcp, v.bank, v.aadhaar, v.link, v.other, v.critical, v.officer, v.lastSurvey ?? ""]);
+    setPreview({ title: "Village Wise Report", filename: "mvy-village-wise-report.pdf", headers, rows: reportRows });
+  };
+
   const downloadIssueDetailReport = (issue: string) => {
     setPreview({
       title: `${issue} Issue Detail Report`,
@@ -169,19 +180,6 @@ function Reports() {
       rows: issueDetailRows(customRows, customIssue || undefined),
     });
   };
-  const downloadResolvedCasesPdf = () => {
-    const headers = ["Application ID", "Name", "Project", "Block", "Gram Panchayat", "Village", "Mobile", "Survey Status", "Case Status", "Last Survey", "Remark"];
-    const reportRows = rows
-      .filter((row) => row.caseStatus === "Resolved")
-      .map((row) => [row.appId, row.name, row.project ?? "", row.block, row.gp, row.village, row.mobile, row.surveyStatus, row.caseStatus, row.lastSurvey ?? "", row.remark ?? ""]);
-    setPreview({ title: "Resolved Cases Report", filename: "mvy-resolved-cases-report.pdf", headers, rows: reportRows });
-  };
-  const downloadSurveyProgressPdf = () => {
-    const headers = ["Application ID", "Name", "Project", "Block", "Gram Panchayat", "Village", "Survey Status", "Case Status", "Pending Days", "Officer", "Last Survey"];
-    const reportRows = rows.map((row) => [row.appId, row.name, row.project ?? "", row.block, row.gp, row.village, row.surveyStatus, row.caseStatus, row.pendingDays, row.officer, row.lastSurvey ?? ""]);
-    setPreview({ title: "Survey Progress Report", filename: "mvy-survey-progress-report.pdf", headers, rows: reportRows });
-  };
-
   return (
     <>
       <PortalNavCard />
@@ -315,13 +313,13 @@ function Reports() {
                       <Download className="size-3.5" /> PDF
                     </Button>
                   ) : null}
-                  {name === "Resolved Cases Report" ? (
-                    <Button size="sm" variant="outline" onClick={downloadResolvedCasesPdf}>
-                      <Download className="size-3.5" /> PDF
+                  {name === "Village Wise Report" ? (
+                    <Button size="sm" variant="outline" onClick={downloadVillageReport}>
+                      <Download className="size-3.5" /> Excel
                     </Button>
                   ) : null}
-                  {name === "Survey Progress Report" ? (
-                    <Button size="sm" variant="outline" onClick={downloadSurveyProgressPdf}>
+                  {name === "Village Wise Report" ? (
+                    <Button size="sm" variant="outline" onClick={downloadVillagePdf}>
                       <Download className="size-3.5" /> PDF
                     </Button>
                   ) : null}

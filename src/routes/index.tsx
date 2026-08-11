@@ -17,14 +17,14 @@ import { KpiCard } from "@/components/dash/kpi-card";
 import { Bar, Panel, StatusPill } from "@/components/dash/panel";
 import { ReportPreview, type ReportPreviewData } from "@/components/dash/report-preview";
 import { LazyChart } from "@/components/dash/lazy-charts";
-import { blockStats, formatBeneficiaryReasons, gpStats, kpis, projectStats, reasonStats } from "@/data/district";
+import { blockStats, formatBeneficiaryReasons, gpStats, kpis, projectStats, reasonStats, villageStats } from "@/data/district";
 import { REGISTRATION_ISSUES } from "@/data/district";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { beneficiaryHasIssue, ISSUE_DETAIL_HEADERS, ISSUE_REPORT_OPTIONS, issueDetailRows } from "@/lib/issue-report";
-import { getSurveyStatusClass } from "@/lib/survey-status";
+import { getSurveyStatusClass, getSurveyStatusLabel } from "@/lib/survey-status";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({
@@ -63,6 +63,7 @@ function SinglePageDashboard() {
   const ps = projectStats(rows);
   const bs = blockStats(rows);
   const gs = gpStats(rows);
+  const vs = villageStats(rows);
   const hasProjectData = ps.length > 0;
   const gpQueuePages = Math.max(1, Math.ceil(gs.length / GP_QUEUE_PAGE_SIZE));
   const gpQueuePageIndex = Math.min(gpQueuePage, gpQueuePages - 1);
@@ -131,6 +132,16 @@ function SinglePageDashboard() {
     const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
     const reportRows = gs.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
     setPreview({ title: "GP Wise Report", filename: "mvy-gp-wise-report.pdf", headers, rows: reportRows });
+  };
+  const downloadVillageReport = () => {
+    const headers = ["Project", "Block", "Gram Panchayat", "Village", "Total", "Pending", "Survey Done", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "High Priority", "Officer", "Last Survey"];
+    const reportRows = vs.map((v) => [v.project, v.block, v.gp, v.village, v.total, v.pending, v.completed, `${v.surveyPct}%`, v.mcp, v.bank, v.aadhaar, v.link, v.other, v.critical, v.officer, v.lastSurvey ?? ""]);
+    setPreview({ title: "Village Wise Report", filename: "mvy-village-wise-report.xls", format: "excel", headers, rows: reportRows });
+  };
+  const downloadVillagePdf = () => {
+    const headers = ["Project", "Block", "Gram Panchayat", "Village", "Total", "Pending", "Survey Done", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "High Priority", "Officer", "Last Survey"];
+    const reportRows = vs.map((v) => [v.project, v.block, v.gp, v.village, v.total, v.pending, v.completed, `${v.surveyPct}%`, v.mcp, v.bank, v.aadhaar, v.link, v.other, v.critical, v.officer, v.lastSurvey ?? ""]);
+    setPreview({ title: "Village Wise Report", filename: "mvy-village-wise-report.pdf", headers, rows: reportRows });
   };
   const downloadIssueDetailReport = (issue: string) => {
     setPreview({
@@ -225,10 +236,11 @@ function SinglePageDashboard() {
 
       <TabsContent value="dashboard" className="mt-0 space-y-4">
         <section id="overview" className="scroll-mt-32 space-y-4">
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           <KpiCard label="Total Beneficiaries" value={k.total.toLocaleString("en-IN")} icon={Users} tone="navy" />
           <KpiCard label="Survey Completed" value={k.surveyDone.toLocaleString("en-IN")} icon={CheckCircle2} tone="green" />
-          <KpiCard label="Survey In Progress" value={k.surveyInProgress.toLocaleString("en-IN")} icon={ClipboardList} tone="navy" />
+          <KpiCard label="Registered" value={k.surveyRegistered.toLocaleString("en-IN")} icon={ClipboardList} tone="navy" />
+          <KpiCard label="Reason Verification Pending" value={k.surveyReasonPending.toLocaleString("en-IN")} icon={ClipboardList} tone="red" />
           <KpiCard label="Survey Pending" value={k.surveyPending.toLocaleString("en-IN")} icon={ClipboardList} tone="amber" />
         </div>
 
@@ -395,7 +407,6 @@ function SinglePageDashboard() {
                   <th className="px-2 py-2">GP</th>
                   <th className="px-2 py-2">Reason</th>
                   <th className="px-2 py-2">Survey</th>
-                  <th className="px-2 py-2">Status</th>
                   <th className="px-2 py-2">Pending Days</th>
                   <th className="px-2 py-2" />
                 </tr>
@@ -409,7 +420,6 @@ function SinglePageDashboard() {
                     <td className="px-2 py-2">{b.gp}</td>
                     <td className="px-2 py-2">{formatBeneficiaryReasons(b)}</td>
                     <td className="px-2 py-2"><StatusBadge value={b.surveyStatus} good="Completed" /></td>
-                    <td className="px-2 py-2"><StatusBadge value={b.caseStatus} good="Resolved" /></td>
                     <td className={cn("num px-2 py-2", b.pendingDays >= 30 && "font-semibold text-gov-red")}>
                       {b.pendingDays}
                     </td>
@@ -487,7 +497,7 @@ function SinglePageDashboard() {
                 </Button>
               </div>
             </div>
-            {["Project Wise Report", "Block Wise Report", "GP Report", "Issue Detail Report"].map((name) => (
+            {["Project Wise Report", "Block Wise Report", "GP Report", "Village Wise Report", "Issue Detail Report"].map((name) => (
               <div key={name} className="rounded-md border border-border p-3">
                 {name === "Issue Detail Report" ? (
                   <div className="grid gap-3">
@@ -540,6 +550,16 @@ function SinglePageDashboard() {
                     ) : null}
                     {name === "GP Report" ? (
                       <Button size="sm" variant="outline" onClick={downloadGpPdf}>
+                        PDF
+                      </Button>
+                    ) : null}
+                    {name === "Village Wise Report" ? (
+                      <Button size="sm" variant="outline" onClick={downloadVillageReport}>
+                        Excel
+                      </Button>
+                    ) : null}
+                    {name === "Village Wise Report" ? (
+                      <Button size="sm" variant="outline" onClick={downloadVillagePdf}>
                         PDF
                       </Button>
                     ) : null}
@@ -636,7 +656,7 @@ function BlockRow({ b, onSelect }: { b: ReturnType<typeof blockStats>[number]; o
 
 function StatusBadge({ value, good }: { value: string; good: string }) {
   const isGood = value === good;
-  const isSurveyStatus = ["Completed", "In Progress", "Reason Pending", "Pending"].includes(value);
+  const isSurveyStatus = ["Completed", "Registered", "In Progress", "Reason Verification Pending", "Reason Pending", "Pending"].includes(value);
   return (
     <Badge
       variant="outline"
@@ -648,7 +668,7 @@ function StatusBadge({ value, good }: { value: string; good: string }) {
             : "border-gov-red/40 bg-gov-red-soft text-gov-red",
       )}
     >
-      {value}
+      {isSurveyStatus ? getSurveyStatusLabel(value) : value}
     </Badge>
   );
 }

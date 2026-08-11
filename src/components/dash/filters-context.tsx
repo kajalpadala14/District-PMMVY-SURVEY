@@ -7,7 +7,7 @@ import {
 } from "@/data/district";
 import { fetchSheetGet, fetchSheetPost, isSheetApiConfigured } from "@/lib/sheet-api";
 
-const SHEET_ROWS_CACHE_KEY = "mvy.sheet.rows.v3";
+const SHEET_ROWS_CACHE_KEY = "mvy.sheet.rows.v5";
 
 interface Ctx {
   filters: Filters;
@@ -55,6 +55,7 @@ export function FiltersProvider({ children }: { children: ReactNode }) {
     setError(null);
     const params = new URLSearchParams({
       action: "beneficiaries",
+      refresh: "1",
     });
 
     fetchSheetGet<Beneficiary[]>(params)
@@ -136,12 +137,20 @@ function normalizeBeneficiarySurveyStatus(row: Beneficiary): Beneficiary {
   const hasRegistrationWorkflow = Boolean(row.registrationStatus || row.reasonKnown || row.registrationReason || row.issue);
   const normalized = {
     ...row,
+    appId: row.appId.replace(/^MVY\//, "PMMVY/"),
     project,
+    surveyStatus: normalizeSurveyStatus(row.surveyStatus),
   };
   if (row.surveyStatus === "Completed" && !hasRegistrationWorkflow && row.caseStatus !== "Resolved") {
     return { ...normalized, surveyStatus: "Pending" };
   }
   return normalized;
+}
+
+function normalizeSurveyStatus(status: Beneficiary["surveyStatus"]): Beneficiary["surveyStatus"] {
+  if (status === "In Progress") return "Registered";
+  if (status === "Reason Pending") return "Reason Verification Pending";
+  return status;
 }
 
 function readCachedRows() {

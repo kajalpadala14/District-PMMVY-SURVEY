@@ -1,15 +1,10 @@
-import { RefreshCw, Search, Download } from "lucide-react";
+import { RefreshCw, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useFilters } from "./filters-context";
-import { downloadPdfReport } from "@/lib/export-pdf";
-import { ISSUE_DETAIL_HEADERS, issueDetailRows } from "@/lib/issue-report";
 
 export function TopBar() {
   const { filters, setFilter, rows, isLoading } = useFilters();
-  const downloadCurrentPdf = () => {
-    downloadPdfReport("mvy-current-selection-report.pdf", "Current Selection Report", ISSUE_DETAIL_HEADERS, issueDetailRows(rows));
-  };
 
   return (
     <header className="sticky top-0 z-30">
@@ -41,14 +36,6 @@ export function TopBar() {
             aria-label="Refresh dashboard"
           >
             <RefreshCw className="size-4" />
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="hidden sm:inline-flex"
-            onClick={downloadCurrentPdf}
-          >
-            <Download className="size-4" /> PDF
           </Button>
         </div>
       </div>

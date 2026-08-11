@@ -28,16 +28,16 @@ export const REGISTRATION_REASONS = [
 export type RegistrationReason = (typeof REGISTRATION_REASONS)[number];
 
 export const REGISTRATION_ISSUES = [
-  "Aadhaar Mismatch",
+  "MCP Card Missing",
   "Aadhaar-Bank Link",
   "Bank Account Issue",
-  "MCP Card Missing",
+  "Aadhaar Mismatch",
   "Document Missing",
   "Other",
 ] as const;
 export type RegistrationIssue = (typeof REGISTRATION_ISSUES)[number];
 
-export type SurveyStatus = "Completed" | "Pending" | "In Progress" | "Reason Pending";
+export type SurveyStatus = "Completed" | "Pending" | "Registered" | "In Progress" | "Reason Pending" | "Reason Verification Pending";
 export type CaseStatus = "Pending" | "Resolved";
 
 const PROJECT_ALIASES: Record<string, string> = {
@@ -168,22 +168,24 @@ export function normalizeProjectName(value?: string) {
 export function kpis(rows: Beneficiary[]) {
   const total = rows.length;
   const pending = rows.filter((r) => r.caseStatus === "Pending");
-  const surveyDone = rows.filter((r) => r.surveyStatus === "Completed").length;
-  const surveyInProgress = rows.filter((r) => r.surveyStatus === "In Progress").length;
-  const surveyPending = Math.max(0, total - surveyInProgress - surveyDone);
+  const surveyDone = surveyDoneCount(rows);
+  const surveyRegistered = rows.filter(isSurveyRegistered).length;
+  const surveyReasonPending = rows.filter(isSurveyReasonPending).length;
+  const surveyPending = surveyPendingCount(rows);
   const over30 = pending.filter((r) => r.pendingDays >= 30).length;
   const over7 = pending.filter((r) => r.pendingDays >= 7).length;
   const high = pending.filter((r) => r.priority === "High").length;
   const issueNoCount = PENDING_REASONS.reduce((sum, reason) => sum + reasonCount(pending, reason), 0);
   return {
     total,
-    pending: pending.length,
+    pending: surveyPending,
     surveyDone,
-    surveyInProgress,
+    surveyRegistered,
+    surveyReasonPending,
     surveyPending,
     issueNoCount,
     surveyProgress: total ? Math.round((surveyDone / total) * 1000) / 10 : 0,
-    pendingPct: total ? Math.round((pending.length / total) * 1000) / 10 : 0,
+    pendingPct: total ? Math.round((surveyPending / total) * 1000) / 10 : 0,
     over7,
     over30,
     high,
@@ -226,8 +228,8 @@ export function projectStats(rows: Beneficiary[]): ProjectStat[] {
   const map = groupBy(rows.filter((r) => r.project), (r) => r.project || "");
   return [...map.entries()]
     .map(([project, rs]) => {
-      const pending = rs.filter((r) => r.caseStatus === "Pending").length;
-      const completed = rs.filter((r) => r.surveyStatus === "Completed").length;
+      const pending = surveyPendingCount(rs);
+      const completed = surveyDoneCount(rs);
       const surveyPct = rs.length ? Math.round((completed / rs.length) * 1000) / 10 : 0;
       return {
         project,
@@ -252,8 +254,8 @@ export function blockStats(rows: Beneficiary[]): BlockStat[] {
   const map = groupBy(rows, (r) => r.block);
   return [...map.entries()]
     .map(([block, rs]) => {
-      const pending = rs.filter((r) => r.caseStatus === "Pending").length;
-      const completed = rs.filter((r) => r.surveyStatus === "Completed").length;
+      const pending = surveyPendingCount(rs);
+      const completed = surveyDoneCount(rs);
       const surveyPct = rs.length ? Math.round((completed / rs.length) * 1000) / 10 : 0;
       return {
         projectSummary: "",
@@ -291,10 +293,9 @@ export function gpStats(rows: Beneficiary[]) {
       const master = DANTEWADA_GRAM_PANCHAYATS.find((item) => item.block === block && normalizeGpKey(item.gp) === gpKey);
       const project = rs.find((r) => r.project)?.project ?? "";
       const gp = rs.find((r) => r.gp)?.gp ?? master?.gp ?? gpKey;
-      const pending = rs.filter((r) => r.caseStatus === "Pending").length;
-      const completed = rs.filter((r) => r.surveyStatus === "Completed").length;
-      const inProgress = rs.filter((r) => r.surveyStatus === "In Progress").length;
-      const surveyPending = Math.max(0, rs.length - inProgress - completed);
+      const pending = surveyPendingCount(rs);
+      const completed = surveyDoneCount(rs);
+      const surveyPending = pending;
       return {
         project,
         block,
@@ -320,8 +321,8 @@ export function villageStats(rows: Beneficiary[]) {
   return [...groupBy(rows, (r) => `${r.project || ""}|${r.block}|${r.gp}|${r.village}`).entries()]
     .map(([key, rs]) => {
       const [project = "", block = "", gp = "", village = ""] = key.split("|");
-      const pending = rs.filter((r) => r.caseStatus === "Pending").length;
-      const completed = rs.filter((r) => r.surveyStatus === "Completed").length;
+      const pending = surveyPendingCount(rs);
+      const completed = surveyDoneCount(rs);
       const last = rs.map((r) => r.lastSurvey).filter(Boolean).sort().at(-1) ?? null;
       return {
         project,
@@ -348,7 +349,7 @@ export function villageStats(rows: Beneficiary[]) {
 export function officerStats(rows: Beneficiary[]) {
   return [...groupBy(rows, (r) => r.officer).entries()]
     .map(([officer, rs], i) => {
-      const completed = rs.filter((r) => r.surveyStatus === "Completed").length;
+      const completed = surveyDoneCount(rs);
       const pct = rs.length ? Math.round((completed / rs.length) * 1000) / 10 : 0;
       return {
         officer,
@@ -407,6 +408,26 @@ export function alerts(rows: Beneficiary[]) {
 
 function reasonCount(rows: Beneficiary[], reason: PendingReason) {
   return rows.filter((r) => beneficiaryMatchesReason(r, reason)).length;
+}
+
+function surveyPendingCount(rows: Beneficiary[]) {
+  return rows.filter((r) => !isSurveyCompleted(r) && !isSurveyRegistered(r) && !isSurveyReasonPending(r)).length;
+}
+
+function surveyDoneCount(rows: Beneficiary[]) {
+  return rows.filter(isSurveyCompleted).length;
+}
+
+function isSurveyCompleted(row: Beneficiary) {
+  return row.surveyStatus === "Completed";
+}
+
+function isSurveyRegistered(row: Beneficiary) {
+  return row.surveyStatus === "Registered" || row.surveyStatus === "In Progress";
+}
+
+function isSurveyReasonPending(row: Beneficiary) {
+  return row.surveyStatus === "Reason Verification Pending" || row.surveyStatus === "Reason Pending";
 }
 
 function parsePendingReasons(value?: string) {

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/select";
 import { DANTEWADA_GRAM_PANCHAYATS } from "@/data/dantewada-gps";
 import { getPendingReasonLabel, PENDING_REASONS } from "@/data/district";
+import { getSurveyStatusLabel } from "@/lib/survey-status";
 import { useFilters } from "./filters-context";
 
 const ALL = "__all__";
@@ -62,7 +63,10 @@ export function FilterPanel() {
         <Picker
           label="Survey Status"
           value={filters.survey}
-          options={["Completed", "In Progress", "Reason Pending", "Pending"]}
+          options={["Completed", "Registered", "Reason Verification Pending", "Pending"].map((status) => ({
+            label: getSurveyStatusLabel(status),
+            value: status,
+          }))}
           onChange={(v) => setFilter("survey", v)}
         />
       </div>

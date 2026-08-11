@@ -53,7 +53,7 @@ function doGet(e) {
     }
 
     if (action === "beneficiaries" && !refresh) {
-      const cached = getLargeCache_("beneficiaries:v3");
+      const cached = getLargeCache_("beneficiaries:v4");
       if (cached) return ContentService.createTextOutput(cached).setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -67,7 +67,7 @@ function doGet(e) {
         asOf: Utilities.formatDate(new Date(), "Asia/Kolkata", "dd MMM yyyy, HH:mm 'IST'"),
       },
     });
-    putLargeCache_("beneficiaries:v3", responseText, CONFIG.CACHE_SECONDS);
+    putLargeCache_("beneficiaries:v4", responseText, CONFIG.CACHE_SECONDS);
     return ContentService.createTextOutput(responseText).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return jsonResponse({
@@ -82,7 +82,7 @@ function doPost(e) {
     const body = JSON.parse((e.postData && e.postData.contents) || "{}");
 
     if (body.action === "updateSurvey") {
-      clearLargeCache_("beneficiaries:v3");
+      clearLargeCache_("beneficiaries:v4");
       return jsonResponse({
         ok: true,
         data: updateSurvey_(body),
@@ -135,12 +135,12 @@ function getBeneficiaries_() {
       const hasRegistrationWorkflow = Boolean(registrationStatus || reasonKnown || registrationReason || selectedIssue);
       const surveyStatus =
         savedSurveyStatus && (savedSurveyStatus !== "Completed" || hasRegistrationWorkflow || savedCaseStatus === "Resolved")
-          ? savedSurveyStatus
+          ? normalizeSurveyStatus_(savedSurveyStatus)
           : "Pending";
 
       return {
         id: "BEN" + pad_(serial, 5),
-        appId: "MVY/" + String(block).slice(0, 3).toUpperCase() + "/" + pad_(serial, 5),
+        appId: "PMMVY/" + String(block).slice(0, 3).toUpperCase() + "/" + pad_(serial, 5),
         project: project,
         name: name,
         mobile: getCell_(row, headers, ["MOBILE", "MOBILE NO", "PHONE"]) || "",
@@ -349,8 +349,11 @@ function buildTimelineEvents_(before, updated, body) {
     events.push({ action: "Status changed to " + updated.surveyStatus, detail: "" });
   }
 
-  if (updated.surveyStatus === "Reason Pending" && (!before || String(before.surveyStatus || "") !== "Reason Pending")) {
-    events.push({ action: "Status = Reason Pending", detail: "Reason and issue can be updated later" });
+  if (
+    (updated.surveyStatus === "Reason Verification Pending" || updated.surveyStatus === "Reason Pending") &&
+    (!before || (String(before.surveyStatus || "") !== "Reason Verification Pending" && String(before.surveyStatus || "") !== "Reason Pending"))
+  ) {
+    events.push({ action: "Status = Reason Verification Pending", detail: "Reason and issue can be updated later" });
   }
 
   if (!before || String(before.registrationReason || "") !== String(updated.registrationReason || "")) {
@@ -536,6 +539,13 @@ function normalizeIssueText_(value) {
   if (reasons.length) {
     return reasons[0] === "Other / Document" ? "Document Missing" : reasons[0];
   }
+  return text;
+}
+
+function normalizeSurveyStatus_(value) {
+  const text = String(value || "").trim();
+  if (text === "In Progress") return "Registered";
+  if (text === "Reason Pending") return "Reason Verification Pending";
   return text;
 }
 

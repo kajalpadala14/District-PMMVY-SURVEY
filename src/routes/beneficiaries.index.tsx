@@ -7,7 +7,7 @@ import { PortalNavCard } from "@/components/dash/portal-nav-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatBeneficiaryReasons } from "@/data/district";
-import { getSurveyStatusClass } from "@/lib/survey-status";
+import { getSurveyStatusClass, getSurveyStatusLabel } from "@/lib/survey-status";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/beneficiaries/")({
@@ -51,7 +51,6 @@ function Beneficiaries() {
                 <th className="px-2 py-2">GP</th>
                 <th className="px-2 py-2">Pending Reason</th>
                 <th className="px-2 py-2">Survey</th>
-                <th className="px-2 py-2">Status</th>
                 <th className="px-2 py-2">Pending Days</th>
                 <th className="px-2 py-2" />
               </tr>
@@ -69,19 +68,7 @@ function Beneficiaries() {
                       variant="outline"
                       className={getSurveyStatusClass(b.surveyStatus)}
                     >
-                      {b.surveyStatus}
-                    </Badge>
-                  </td>
-                  <td className="px-2 py-2">
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        b.caseStatus === "Resolved"
-                          ? "border-gov-green/40 bg-gov-green-soft text-gov-green"
-                          : "border-gov-red/40 bg-gov-red-soft text-gov-red",
-                      )}
-                    >
-                      {b.caseStatus}
+                      {getSurveyStatusLabel(b.surveyStatus)}
                     </Badge>
                   </td>
                   <td className={cn("num px-2 py-2", b.pendingDays >= 30 && "font-semibold text-gov-red")}>{b.pendingDays}</td>

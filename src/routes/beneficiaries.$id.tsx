@@ -14,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getSurveyStatusClass } from "@/lib/survey-status";
+import { getSurveyStatusClass, getSurveyStatusLabel } from "@/lib/survey-status";
 import { cn } from "@/lib/utils";
 import { fetchSheetGet } from "@/lib/sheet-api";
 
@@ -222,18 +222,8 @@ function Detail() {
             <Field label="Priority" value={row.priority} />
           </dl>
           <div className="mt-3 flex flex-wrap gap-2">
-            <Badge
-              variant="outline"
-              className={
-                row.caseStatus === "Resolved"
-                  ? "border-gov-green/40 bg-gov-green-soft text-gov-green"
-                  : "border-gov-red/40 bg-gov-red-soft text-gov-red"
-              }
-            >
-              Case: {row.caseStatus}
-            </Badge>
             <Badge variant="outline" className={getSurveyBadgeClass(row.surveyStatus)}>
-              Survey: {row.surveyStatus}
+              Survey: {getSurveyStatusLabel(row.surveyStatus)}
             </Badge>
           </div>
         </Panel>
@@ -332,11 +322,6 @@ function Detail() {
                   <Button type="submit" disabled={isSaving || !submitEnabled}>
                     <Save className="size-4" /> {primaryActionText}
                   </Button>
-                  {registrationStatus !== "Yes" ? (
-                    <Button type="button" variant="secondary" disabled={isSaving || !submitEnabled} onClick={() => void saveSurvey("Resolved")}>
-                      Mark resolved
-                    </Button>
-                  ) : null}
                 </div>
               </form>
             </TabsContent>
@@ -360,7 +345,7 @@ function Detail() {
                           ) : null}
                           {item.status ? (
                             <Badge variant="outline" className={getSurveyBadgeClass(item.status)}>
-                              {item.status}
+                              {getSurveyStatusLabel(item.status)}
                             </Badge>
                           ) : null}
                         </div>
@@ -386,8 +371,8 @@ function Detail() {
 }
 
 function getWorkflowStatus(registrationStatus: YesNo, reasonKnown: YesNo) {
-  if (registrationStatus === "Yes") return "In Progress";
-  if (registrationStatus === "No" && reasonKnown === "No") return "Reason Pending";
+  if (registrationStatus === "Yes") return "Registered";
+  if (registrationStatus === "No" && reasonKnown === "No") return "Reason Verification Pending";
   if (registrationStatus === "No" && reasonKnown === "Yes") return "Completed";
   return "Pending";
 }
