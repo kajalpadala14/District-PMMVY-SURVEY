@@ -13,12 +13,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/beneficiaries/")({
   head: () => ({
     meta: [
-      { title: "Pending Beneficiaries | MVY - SURVEY Portal" },
+      { title: "Pending Beneficiaries | PMMVY - SURVEY Portal" },
       {
         name: "description",
         content: "Search and drill into pending Mahtari Vandan Yojana beneficiaries by name, application ID, village or GP.",
       },
-      { property: "og:title", content: "Pending Beneficiaries | MVY - SURVEY Portal" },
+      { property: "og:title", content: "Pending Beneficiaries | PMMVY - SURVEY Portal" },
       { property: "og:description", content: "Instant search across district beneficiaries with survey and pending status." },
     ],
   }),

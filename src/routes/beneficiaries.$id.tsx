@@ -35,9 +35,9 @@ export const Route = createFileRoute("/beneficiaries/$id")({
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
-      return { meta: [{ title: "Beneficiary not found | MVY" }, { name: "robots", content: "noindex" }] };
+      return { meta: [{ title: "Beneficiary not found | PMMVY" }, { name: "robots", content: "noindex" }] };
     }
-    const title = "Beneficiary Profile | MVY";
+    const title = "Beneficiary Profile | PMMVY";
     return {
       meta: [
         { title },

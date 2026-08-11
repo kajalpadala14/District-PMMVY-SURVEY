@@ -30,11 +30,11 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "MVY - SURVEY Portal" },
+      { title: "PMMVY - SURVEY Portal" },
       {
         name: "description",
         content:
-          "MVY survey portal for KPIs, Gram Panchayats, villages, beneficiaries, alerts and reports.",
+          "PMMVY survey portal for KPIs, Gram Panchayats, villages, beneficiaries, alerts and reports.",
       },
     ],
   }),
@@ -196,7 +196,7 @@ function SinglePageDashboard() {
       <section className="rounded-lg border border-border bg-surface px-4 py-4 shadow-[var(--shadow-card)]">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-gov-blue">MVY - SURVEY Portal</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gov-blue">PMMVY - SURVEY Portal</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge variant="secondary" className="num">

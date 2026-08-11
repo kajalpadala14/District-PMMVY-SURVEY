@@ -16,12 +16,12 @@ import { beneficiaryHasIssue, ISSUE_DETAIL_HEADERS, ISSUE_REPORT_OPTIONS, issueD
 export const Route = createFileRoute("/reports")({
   head: () => ({
     meta: [
-      { title: "Reports & Export | MVY - SURVEY Portal" },
+      { title: "Reports & Export | PMMVY - SURVEY Portal" },
       {
         name: "description",
         content: "Download filter-aware district, GP, village and issue reports.",
       },
-      { property: "og:title", content: "Reports & Export | MVY - SURVEY Portal" },
+      { property: "og:title", content: "Reports & Export | PMMVY - SURVEY Portal" },
       { property: "og:description", content: "Filter-aware report views for district review and monitoring." },
     ],
   }),
