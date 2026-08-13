@@ -19,14 +19,17 @@ const ALL = "__all__";
 export function FilterPanel() {
   const { filters, setFilter, reset, activeCount, rows, allRows } = useFilters();
 
-  const gps = unique([...allRows.map((b) => b.gp), ...DANTEWADA_GRAM_PANCHAYATS.map((b) => b.gp)]);
-  const villages = [
-    ...new Set(
-      allRows
-        .filter((b) => !filters.gp || b.gp === filters.gp)
-        .map((b) => b.village),
-    ),
-  ].sort();
+  const blocks = unique([...allRows.map((b) => b.block), ...DANTEWADA_GRAM_PANCHAYATS.map((b) => b.block)]);
+  const gps = unique([
+    ...allRows.filter((b) => !filters.block || b.block === filters.block).map((b) => b.gp),
+    ...DANTEWADA_GRAM_PANCHAYATS.filter((b) => !filters.block || b.block === filters.block).map((b) => b.gp),
+  ]);
+  const villages = unique(
+    allRows
+      .filter((b) => !filters.block || b.block === filters.block)
+      .filter((b) => !filters.gp || b.gp === filters.gp)
+      .map((b) => b.village),
+  );
   return (
     <div className="gov-panel mb-4 p-3.5">
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -52,6 +55,7 @@ export function FilterPanel() {
 
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <SearchBox value={filters.q ?? ""} onChange={(v) => setFilter("q", v)} />
+        <Picker label="Block" value={filters.block} options={blocks} onChange={(v) => setFilter("block", v)} />
         <Picker label="Gram Panchayat" value={filters.gp} options={gps} onChange={(v) => setFilter("gp", v)} />
         <Picker label="Village" value={filters.village} options={villages} onChange={(v) => setFilter("village", v)} />
         <Picker
