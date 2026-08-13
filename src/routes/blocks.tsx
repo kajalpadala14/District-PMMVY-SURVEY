@@ -42,13 +42,14 @@ function Blocks() {
 
       <Panel title="Block Scorecard" subtitle="Click a block to drill down into its Gram Panchayats" className="mt-3">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1100px] text-xs">
+          <table className="w-full min-w-[1160px] text-xs">
             <thead>
               <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                 <th className="px-2 py-2">Block</th>
                 <th className="px-2 py-2">Total</th>
                 <th className="px-2 py-2">Pending</th>
                 <th className="px-2 py-2">Survey Done</th>
+                <th className="px-2 py-2">Registered</th>
                 <th className="px-2 py-2">Survey %</th>
                 <th className="px-2 py-2">MCP No</th>
                 <th className="px-2 py-2">Bank No</th>
@@ -66,6 +67,7 @@ function Blocks() {
                   <td className="num px-2 py-2">{b.total}</td>
                   <td className="num px-2 py-2 font-semibold text-gov-red">{b.pending}</td>
                   <td className="num px-2 py-2">{b.completed}</td>
+                  <td className="num px-2 py-2">{b.registered}</td>
                   <td className="px-2 py-2">
                     <Bar value={b.surveyPct} tone={b.surveyPct >= 70 ? "green" : "red"} />
                   </td>

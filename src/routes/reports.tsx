@@ -74,34 +74,34 @@ function Reports() {
   );
 
   const downloadProjectReport = () => {
-    const headers = ["Project", "Total", "Pending", "Survey Done", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No"];
-    const reportRows = projects.map((p) => [p.project, p.total, p.pending, p.completed, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other]);
+    const headers = ["Project", "Total", "Pending", "Survey Done", "Registered", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No"];
+    const reportRows = projects.map((p) => [p.project, p.total, p.pending, p.completed, p.registered, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other]);
     setPreview({ title: "Project Wise Report", filename: "mvy-project-wise-report.xls", format: "excel", headers, rows: reportRows });
   };
   const viewProjectReport = () => {
-    const headers = ["Project", "Total", "Pending", "Survey Done", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No"];
-    const reportRows = projects.map((p) => [p.project, p.total, p.pending, p.completed, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other]);
+    const headers = ["Project", "Total", "Pending", "Survey Done", "Registered", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No"];
+    const reportRows = projects.map((p) => [p.project, p.total, p.pending, p.completed, p.registered, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other]);
     setPreview({ title: "Project Wise Report", filename: "mvy-project-wise-report.pdf", headers, rows: reportRows });
   };
   const downloadProjectPdf = () => {
-    const headers = ["Project", "Total", "Pending", "Survey Done", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No"];
-    const reportRows = projects.map((p) => [p.project, p.total, p.pending, p.completed, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other]);
+    const headers = ["Project", "Total", "Pending", "Survey Done", "Registered", "Survey %", "Blocks", "GPs", "Villages", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No"];
+    const reportRows = projects.map((p) => [p.project, p.total, p.pending, p.completed, p.registered, `${p.surveyPct}%`, p.blocks, p.gps, p.villages, p.mcp, p.bank, p.aadhaar, p.link, p.other]);
     setPreview({ title: "Project Wise Report", filename: "mvy-project-wise-report.pdf", headers, rows: reportRows });
   };
 
   const downloadBlockReport = () => {
-    const headers = ["Block", "Total", "Pending", "Survey Done", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers"];
-    const reportRows = blocks.map((b) => [b.block, b.total, b.pending, b.completed, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers]);
+    const headers = ["Block", "Total", "Pending", "Survey Done", "Registered", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers"];
+    const reportRows = blocks.map((b) => [b.block, b.total, b.pending, b.completed, b.registered, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers]);
     setPreview({ title: "Block Wise Report", filename: "mvy-block-wise-report.xls", format: "excel", headers, rows: reportRows });
   };
   const viewBlockReport = () => {
-    const headers = ["Block", "Total", "Pending", "Survey Done", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers"];
-    const reportRows = blocks.map((b) => [b.block, b.total, b.pending, b.completed, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers]);
+    const headers = ["Block", "Total", "Pending", "Survey Done", "Registered", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers"];
+    const reportRows = blocks.map((b) => [b.block, b.total, b.pending, b.completed, b.registered, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers]);
     setPreview({ title: "Block Wise Report", filename: "mvy-block-wise-report.pdf", headers, rows: reportRows });
   };
   const downloadBlockPdf = () => {
-    const headers = ["Block", "Total", "Pending", "Survey Done", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers"];
-    const reportRows = blocks.map((b) => [b.block, b.total, b.pending, b.completed, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers]);
+    const headers = ["Block", "Total", "Pending", "Survey Done", "Registered", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Officers"];
+    const reportRows = blocks.map((b) => [b.block, b.total, b.pending, b.completed, b.registered, `${b.surveyPct}%`, b.mcp, b.bank, b.aadhaar, b.link, b.other, b.officers]);
     setPreview({ title: "Block Wise Report", filename: "mvy-block-wise-report.pdf", headers, rows: reportRows });
   };
 

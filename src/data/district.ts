@@ -199,6 +199,7 @@ export interface BlockStat {
   total: number;
   pending: number;
   completed: number;
+  registered: number;
   surveyPct: number;
   mcp: number;
   bank: number;
@@ -213,6 +214,7 @@ export interface ProjectStat {
   total: number;
   pending: number;
   completed: number;
+  registered: number;
   surveyPct: number;
   blocks: number;
   gps: number;
@@ -230,12 +232,14 @@ export function projectStats(rows: Beneficiary[]): ProjectStat[] {
     .map(([project, rs]) => {
       const pending = surveyPendingCount(rs);
       const completed = surveyDoneCount(rs);
+      const registered = rs.filter(isSurveyRegistered).length;
       const surveyPct = rs.length ? Math.round((completed / rs.length) * 1000) / 10 : 0;
       return {
         project,
         total: rs.length,
         pending,
         completed,
+        registered,
         surveyPct,
         blocks: new Set(rs.map((r) => r.block).filter(Boolean)).size,
         gps: new Set(rs.map((r) => `${r.block}|${r.gp}`).filter(Boolean)).size,
@@ -256,6 +260,7 @@ export function blockStats(rows: Beneficiary[]): BlockStat[] {
     .map(([block, rs]) => {
       const pending = surveyPendingCount(rs);
       const completed = surveyDoneCount(rs);
+      const registered = rs.filter(isSurveyRegistered).length;
       const surveyPct = rs.length ? Math.round((completed / rs.length) * 1000) / 10 : 0;
       return {
         projectSummary: "",
@@ -264,6 +269,7 @@ export function blockStats(rows: Beneficiary[]): BlockStat[] {
         total: rs.length,
         pending,
         completed,
+        registered,
         surveyPct,
         mcp: reasonCount(rs, "MCP Card Missing"),
         bank: reasonCount(rs, "Bank Account Issue"),
@@ -295,6 +301,7 @@ export function gpStats(rows: Beneficiary[]) {
       const gp = rs.find((r) => r.gp)?.gp ?? master?.gp ?? gpKey;
       const pending = surveyPendingCount(rs);
       const completed = surveyDoneCount(rs);
+      const registered = rs.filter(isSurveyRegistered).length;
       const surveyPending = pending;
       return {
         project,
@@ -304,6 +311,7 @@ export function gpStats(rows: Beneficiary[]) {
         total: rs.length,
         pending,
         completed,
+        registered,
         surveyPending,
         mcp: reasonCount(rs, "MCP Card Missing"),
         bank: reasonCount(rs, "Bank Account Issue"),
@@ -323,6 +331,7 @@ export function villageStats(rows: Beneficiary[]) {
       const [project = "", block = "", gp = "", village = ""] = key.split("|");
       const pending = surveyPendingCount(rs);
       const completed = surveyDoneCount(rs);
+      const registered = rs.filter(isSurveyRegistered).length;
       const last = rs.map((r) => r.lastSurvey).filter(Boolean).sort().at(-1) ?? null;
       return {
         project,
@@ -332,6 +341,7 @@ export function villageStats(rows: Beneficiary[]) {
         total: rs.length,
         pending,
         completed,
+        registered,
         surveyPct: rs.length ? Math.round((completed / rs.length) * 1000) / 10 : 0,
         officer: rs[0]?.officer ?? "",
         lastSurvey: last,
