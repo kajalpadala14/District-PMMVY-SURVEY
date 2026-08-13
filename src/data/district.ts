@@ -184,7 +184,7 @@ export function kpis(rows: Beneficiary[]) {
     surveyReasonPending,
     surveyPending,
     issueNoCount,
-    surveyProgress: total ? Math.round((surveyDone / total) * 1000) / 10 : 0,
+    surveyProgress: surveyProgressPct(rows),
     pendingPct: total ? Math.round((surveyPending / total) * 1000) / 10 : 0,
     over7,
     over30,
@@ -233,7 +233,7 @@ export function projectStats(rows: Beneficiary[]): ProjectStat[] {
       const pending = surveyPendingCount(rs);
       const completed = surveyDoneCount(rs);
       const registered = rs.filter(isSurveyRegistered).length;
-      const surveyPct = rs.length ? Math.round((completed / rs.length) * 1000) / 10 : 0;
+      const surveyPct = surveyProgressPct(rs);
       return {
         project,
         total: rs.length,
@@ -261,7 +261,7 @@ export function blockStats(rows: Beneficiary[]): BlockStat[] {
       const pending = surveyPendingCount(rs);
       const completed = surveyDoneCount(rs);
       const registered = rs.filter(isSurveyRegistered).length;
-      const surveyPct = rs.length ? Math.round((completed / rs.length) * 1000) / 10 : 0;
+      const surveyPct = surveyProgressPct(rs);
       return {
         projectSummary: "",
         block,
@@ -318,7 +318,7 @@ export function gpStats(rows: Beneficiary[]) {
         aadhaar: reasonCount(rs, "Aadhaar Mismatch"),
         link: reasonCount(rs, "Aadhaar-Bank Link"),
         other: reasonCount(rs, "Other / Document"),
-        surveyPct: rs.length ? Math.round((completed / rs.length) * 1000) / 10 : 0,
+        surveyPct: surveyProgressPct(rs),
         high: rs.filter((r) => r.priority === "High" && r.caseStatus === "Pending").length,
       };
     })
@@ -342,7 +342,7 @@ export function villageStats(rows: Beneficiary[]) {
         pending,
         completed,
         registered,
-        surveyPct: rs.length ? Math.round((completed / rs.length) * 1000) / 10 : 0,
+        surveyPct: surveyProgressPct(rs),
         officer: rs[0]?.officer ?? "",
         lastSurvey: last,
         mcp: reasonCount(rs, "MCP Card Missing"),
@@ -426,6 +426,11 @@ function surveyPendingCount(rows: Beneficiary[]) {
 
 function surveyDoneCount(rows: Beneficiary[]) {
   return rows.filter(isSurveyCompleted).length;
+}
+
+function surveyProgressPct(rows: Beneficiary[]) {
+  const progressed = rows.filter((row) => isSurveyCompleted(row) || isSurveyRegistered(row) || isSurveyReasonPending(row)).length;
+  return rows.length ? Math.round((progressed / rows.length) * 1000) / 10 : 0;
 }
 
 function isSurveyCompleted(row: Beneficiary) {
