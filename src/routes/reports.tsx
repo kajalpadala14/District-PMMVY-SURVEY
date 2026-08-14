@@ -106,29 +106,29 @@ function Reports() {
   };
 
   const downloadGpReport = () => {
-    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
-    const reportRows = gps.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
+    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Registered", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
+    const reportRows = gps.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.registered, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
     setPreview({ title: "GP Wise Report", filename: "mvy-gp-wise-report.xls", format: "excel", headers, rows: reportRows });
   };
   const viewGpReport = () => {
-    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
-    const reportRows = gps.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
+    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Registered", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
+    const reportRows = gps.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.registered, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
     setPreview({ title: "GP Wise Report", filename: "mvy-gp-wise-report.pdf", headers, rows: reportRows });
   };
   const downloadGpPdf = () => {
-    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
-    const reportRows = gps.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
+    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Registered", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
+    const reportRows = gps.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.registered, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
     setPreview({ title: "GP Wise Report", filename: "mvy-gp-wise-report.pdf", headers, rows: reportRows });
   };
 
   const downloadVillageReport = () => {
-    const headers = ["Project", "Block", "Gram Panchayat", "Village", "Total", "Pending", "Survey Done", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "High Priority", "Officer", "Last Survey"];
-    const reportRows = villages.map((v) => [v.project, v.block, v.gp, v.village, v.total, v.pending, v.completed, `${v.surveyPct}%`, v.mcp, v.bank, v.aadhaar, v.link, v.other, v.critical, v.officer, v.lastSurvey ?? ""]);
+    const headers = ["Project", "Block", "Gram Panchayat", "Village", "Total", "Pending", "Survey Done", "Registered", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "High Priority", "Officer", "Last Survey"];
+    const reportRows = villages.map((v) => [v.project, v.block, v.gp, v.village, v.total, v.pending, v.completed, v.registered, `${v.surveyPct}%`, v.mcp, v.bank, v.aadhaar, v.link, v.other, v.critical, v.officer, v.lastSurvey ?? ""]);
     setPreview({ title: "Village Wise Report", filename: "mvy-village-wise-report.xls", format: "excel", headers, rows: reportRows });
   };
   const downloadVillagePdf = () => {
-    const headers = ["Project", "Block", "Gram Panchayat", "Village", "Total", "Pending", "Survey Done", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "High Priority", "Officer", "Last Survey"];
-    const reportRows = villages.map((v) => [v.project, v.block, v.gp, v.village, v.total, v.pending, v.completed, `${v.surveyPct}%`, v.mcp, v.bank, v.aadhaar, v.link, v.other, v.critical, v.officer, v.lastSurvey ?? ""]);
+    const headers = ["Project", "Block", "Gram Panchayat", "Village", "Total", "Pending", "Survey Done", "Registered", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "High Priority", "Officer", "Last Survey"];
+    const reportRows = villages.map((v) => [v.project, v.block, v.gp, v.village, v.total, v.pending, v.completed, v.registered, `${v.surveyPct}%`, v.mcp, v.bank, v.aadhaar, v.link, v.other, v.critical, v.officer, v.lastSurvey ?? ""]);
     setPreview({ title: "Village Wise Report", filename: "mvy-village-wise-report.pdf", headers, rows: reportRows });
   };
 

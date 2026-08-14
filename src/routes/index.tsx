@@ -120,28 +120,28 @@ function SinglePageDashboard() {
     setPreview({ title: "Block Wise Report", filename: "mvy-block-wise-report.pdf", headers, rows: reportRows });
   };
   const downloadGpReport = () => {
-    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
-    const reportRows = gs.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
+    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Registered", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
+    const reportRows = gs.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.registered, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
     setPreview({ title: "GP Wise Report", filename: "mvy-gp-wise-report.xls", format: "excel", headers, rows: reportRows });
   };
   const viewGpReport = () => {
-    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
-    const reportRows = gs.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
+    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Registered", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
+    const reportRows = gs.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.registered, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
     setPreview({ title: "GP Wise Report", filename: "mvy-gp-wise-report.pdf", headers, rows: reportRows });
   };
   const downloadGpPdf = () => {
-    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
-    const reportRows = gs.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
+    const headers = ["Block", "Gram Panchayat", "Villages", "Pending", "Completed", "Registered", "Survey Pending", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "Survey %", "High Priority"];
+    const reportRows = gs.map((g) => [g.block, g.gp, g.villages, g.pending, g.completed, g.registered, g.surveyPending, g.mcp, g.bank, g.aadhaar, g.link, g.other, `${g.surveyPct}%`, g.high]);
     setPreview({ title: "GP Wise Report", filename: "mvy-gp-wise-report.pdf", headers, rows: reportRows });
   };
   const downloadVillageReport = () => {
-    const headers = ["Project", "Block", "Gram Panchayat", "Village", "Total", "Pending", "Survey Done", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "High Priority", "Officer", "Last Survey"];
-    const reportRows = vs.map((v) => [v.project, v.block, v.gp, v.village, v.total, v.pending, v.completed, `${v.surveyPct}%`, v.mcp, v.bank, v.aadhaar, v.link, v.other, v.critical, v.officer, v.lastSurvey ?? ""]);
+    const headers = ["Project", "Block", "Gram Panchayat", "Village", "Total", "Pending", "Survey Done", "Registered", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "High Priority", "Officer", "Last Survey"];
+    const reportRows = vs.map((v) => [v.project, v.block, v.gp, v.village, v.total, v.pending, v.completed, v.registered, `${v.surveyPct}%`, v.mcp, v.bank, v.aadhaar, v.link, v.other, v.critical, v.officer, v.lastSurvey ?? ""]);
     setPreview({ title: "Village Wise Report", filename: "mvy-village-wise-report.xls", format: "excel", headers, rows: reportRows });
   };
   const downloadVillagePdf = () => {
-    const headers = ["Project", "Block", "Gram Panchayat", "Village", "Total", "Pending", "Survey Done", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "High Priority", "Officer", "Last Survey"];
-    const reportRows = vs.map((v) => [v.project, v.block, v.gp, v.village, v.total, v.pending, v.completed, `${v.surveyPct}%`, v.mcp, v.bank, v.aadhaar, v.link, v.other, v.critical, v.officer, v.lastSurvey ?? ""]);
+    const headers = ["Project", "Block", "Gram Panchayat", "Village", "Total", "Pending", "Survey Done", "Registered", "Survey %", "MCP No", "Bank No", "Aadhaar No", "Aadhaar-Bank No", "Other No", "High Priority", "Officer", "Last Survey"];
+    const reportRows = vs.map((v) => [v.project, v.block, v.gp, v.village, v.total, v.pending, v.completed, v.registered, `${v.surveyPct}%`, v.mcp, v.bank, v.aadhaar, v.link, v.other, v.critical, v.officer, v.lastSurvey ?? ""]);
     setPreview({ title: "Village Wise Report", filename: "mvy-village-wise-report.pdf", headers, rows: reportRows });
   };
   const downloadIssueDetailReport = (issue: string) => {
@@ -338,13 +338,14 @@ function SinglePageDashboard() {
           }
         >
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1120px] text-xs">
+            <table className="w-full min-w-[1200px] text-xs">
               <thead>
                 <tr className="border-b border-border text-left text-[11px] uppercase tracking-wide text-muted-foreground">
                   <th className="px-2 py-2">Gram Panchayat</th>
                   <th className="px-2 py-2">Villages</th>
                   <th className="px-2 py-2">Pending</th>
                   <th className="px-2 py-2">Completed</th>
+                  <th className="px-2 py-2">Registered</th>
                   <th className="px-2 py-2">MCP No</th>
                   <th className="px-2 py-2">Bank No</th>
                   <th className="px-2 py-2">Aadhaar No</th>
@@ -362,6 +363,7 @@ function SinglePageDashboard() {
                     <td className="num px-2 py-2">{g.villages}</td>
                     <td className="num px-2 py-2 font-semibold text-gov-red">{g.pending}</td>
                     <td className="num px-2 py-2">{g.completed}</td>
+                    <td className="num px-2 py-2">{g.registered}</td>
                     <td className="num px-2 py-2">{g.mcp}</td>
                     <td className="num px-2 py-2">{g.bank}</td>
                     <td className="num px-2 py-2">{g.aadhaar}</td>
