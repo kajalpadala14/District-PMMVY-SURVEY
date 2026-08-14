@@ -169,6 +169,7 @@ export function kpis(rows: Beneficiary[]) {
   const total = rows.length;
   const pending = rows.filter((r) => r.caseStatus === "Pending");
   const surveyDone = surveyDoneCount(rows);
+  const surveyCompletionVerified = rows.filter(isSurveyCompleted).length;
   const surveyRegistered = rows.filter(isSurveyRegistered).length;
   const surveyReasonPending = rows.filter(isSurveyReasonPending).length;
   const surveyPending = surveyPendingCount(rows);
@@ -180,6 +181,7 @@ export function kpis(rows: Beneficiary[]) {
     total,
     pending: surveyPending,
     surveyDone,
+    surveyCompletionVerified,
     surveyRegistered,
     surveyReasonPending,
     surveyPending,
@@ -421,16 +423,20 @@ function reasonCount(rows: Beneficiary[], reason: PendingReason) {
 }
 
 function surveyPendingCount(rows: Beneficiary[]) {
-  return rows.filter((r) => !isSurveyCompleted(r) && !isSurveyRegistered(r) && !isSurveyReasonPending(r)).length;
+  return rows.filter((r) => !isSurveyDone(r)).length;
 }
 
 function surveyDoneCount(rows: Beneficiary[]) {
-  return rows.filter(isSurveyCompleted).length;
+  return rows.filter(isSurveyDone).length;
 }
 
 function surveyProgressPct(rows: Beneficiary[]) {
-  const progressed = rows.filter((row) => isSurveyCompleted(row) || isSurveyRegistered(row) || isSurveyReasonPending(row)).length;
+  const progressed = surveyDoneCount(rows);
   return rows.length ? Math.round((progressed / rows.length) * 1000) / 10 : 0;
+}
+
+function isSurveyDone(row: Beneficiary) {
+  return row.registrationStatus === "Yes" || row.registrationStatus === "No" || isSurveyCompleted(row) || isSurveyRegistered(row) || isSurveyReasonPending(row);
 }
 
 function isSurveyCompleted(row: Beneficiary) {
