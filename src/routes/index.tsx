@@ -251,7 +251,7 @@ function SinglePageDashboard() {
           <Panel title="Survey Progress" subtitle="Completed vs pending surveys">
             <LazyChart kind="ProgressDonut" done={k.surveyDone} pending={k.surveyPending} height={250} />
           </Panel>
-          <Panel title="Pending Reason Distribution" subtitle="Why payments are stuck">
+          <Panel title="Pending Reason Distribution" subtitle="Reasons for pending surveys">
             <LazyChart kind="ReasonPie" data={reasonStats(rows)} height={250} onSelect={(reason) => setFilter("reason", reason)} />
           </Panel>
         </div>
